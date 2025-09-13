@@ -10,6 +10,7 @@
 
 -- Insert sample artists
 INSERT INTO artists (name, bio, image_url) VALUES
+  ('Papon', 'Indian singer and music director from Assam', 'https://images.pexels.com/photos/167635/pexels-photo-167635.jpeg?auto=compress&cs=tinysrgb&w=300'),
   ('The Weeknd', 'Canadian singer, songwriter and record producer', 'https://images.pexels.com/photos/167635/pexels-photo-167635.jpeg?auto=compress&cs=tinysrgb&w=300'),
   ('Harry Styles', 'English singer, songwriter and actor', 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=300'),
   ('Dua Lipa', 'English singer and songwriter', 'https://images.pexels.com/photos/1644775/pexels-photo-1644775.jpeg?auto=compress&cs=tinysrgb&w=300'),
@@ -50,22 +51,7 @@ SELECT
   song_data.audio_url,
   song_data.genre
 FROM (VALUES
-  ('Blinding Lights', 'The Weeknd', 'After Hours', 200, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 'R&B'),
-  ('Watermelon Sugar', 'Harry Styles', 'Fine Line', 174, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', 'Pop'),
-  ('Levitating', 'Dua Lipa', 'Future Nostalgia', 203, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', 'Pop'),
-  ('Good 4 U', 'Olivia Rodrigo', 'SOUR', 178, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', 'Pop'),
-  ('Shape of You', 'Ed Sheeran', '÷ (Divide)', 233, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', 'Pop'),
-  ('Shake It Off', 'Taylor Swift', '1989', 219, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', 'Pop'),
-  ('Bad Guy', 'Billie Eilish', 'When We All Fall Asleep, Where Do We Go?', 194, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', 'Alternative'),
-  ('God''s Plan', 'Drake', 'Scorpion', 198, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', 'Hip-Hop'),
-  ('Save Your Tears', 'The Weeknd', 'After Hours', 215, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', 'R&B'),
-  ('As It Was', 'Harry Styles', 'Fine Line', 167, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3', 'Pop'),
-  ('Don''t Start Now', 'Dua Lipa', 'Future Nostalgia', 183, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3', 'Pop'),
-  ('drivers license', 'Olivia Rodrigo', 'SOUR', 242, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3', 'Pop'),
-  ('Perfect', 'Ed Sheeran', '÷ (Divide)', 263, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3', 'Pop'),
-  ('Anti-Hero', 'Taylor Swift', '1989', 200, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3', 'Pop'),
-  ('Lovely', 'Billie Eilish', 'When We All Fall Asleep, Where Do We Go?', 200, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', 'Alternative'),
-  ('In My Feelings', 'Drake', 'Scorpion', 218, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3', 'Hip-Hop')
+  ('Yeh Ishq Hai', 'Papon', 'After Hours', 240, '/audio/Yeh Ishq Hai Papon Version-64kbps.mp3', 'Bollywood'),
 ) AS song_data(title, artist_name, album_name, duration, audio_url, genre)
 JOIN artists a ON a.name = song_data.artist_name
 JOIN albums al ON al.title = song_data.album_name AND al.artist_id = a.id;
