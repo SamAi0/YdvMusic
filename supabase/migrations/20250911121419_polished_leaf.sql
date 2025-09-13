@@ -1,5 +1,5 @@
 /*
-  # Initial Database Schema for Spotify Clone
+  # Initial Database Schema for  ydvmusic
 
   1. New Tables
     - `profiles` - User profile information

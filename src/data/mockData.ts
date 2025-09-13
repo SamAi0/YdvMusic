@@ -49,7 +49,7 @@ export const mockPlaylists: Playlist[] = [
     name: 'Today\'s Top Hits',
     description: 'The hottest tracks right now',
     coverUrl: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=300',
-    creator: 'Spotify',
+    creator: 'ydvmusic',
     tracks: mockTracks
   },
   {
@@ -57,7 +57,7 @@ export const mockPlaylists: Playlist[] = [
     name: 'Chill Vibes',
     description: 'Relax and unwind with these mellow tracks',
     coverUrl: 'https://images.pexels.com/photos/1749303/pexels-photo-1749303.jpeg?auto=compress&cs=tinysrgb&w=300',
-    creator: 'Spotify',
+    creator: 'ydvmusic',
     tracks: mockTracks.slice(0, 3)
   },
   {
@@ -65,7 +65,7 @@ export const mockPlaylists: Playlist[] = [
     name: 'Workout Beats',
     description: 'Get pumped up with these high-energy songs',
     coverUrl: 'https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=300',
-    creator: 'Spotify',
+    creator: 'ydvmusic',
     tracks: mockTracks.slice(1, 4)
   },
   {
@@ -73,7 +73,7 @@ export const mockPlaylists: Playlist[] = [
     name: 'Indie Rock Mix',
     description: 'Alternative and indie rock favorites',
     coverUrl: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=300',
-    creator: 'Spotify',
+    creator: 'ydvmusic',
     tracks: mockTracks.slice(2, 5)
   }
 ];

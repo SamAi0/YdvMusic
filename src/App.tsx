@@ -64,6 +64,7 @@ function App() {
               onSongSelect={handleSongSelect}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
+              setCurrentView={setCurrentView}
             />
           </div>
           <Player 

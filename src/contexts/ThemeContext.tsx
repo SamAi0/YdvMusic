@@ -19,7 +19,7 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('spotify-theme') as Theme;
+    const savedTheme = localStorage.getItem('ydvmusic-theme') as Theme;
     return savedTheme || 'dark';
   });
 
@@ -32,7 +32,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.remove('dark');
     }
     
-    localStorage.setItem('spotify-theme', theme);
+    localStorage.setItem('ydvmusic-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {

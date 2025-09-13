@@ -24,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
           <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-2">
             <span className="text-black font-bold text-sm">♪</span>
           </div>
-          <span className="text-xl font-bold">Spotify</span>
+          <span className="text-xl font-bold">Ydvmusic</span>
         </div>
 
         {/* Main Navigation */}

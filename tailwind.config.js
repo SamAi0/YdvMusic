@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        spotify: {
+        ydvmusic: {
           green: '#1DB954',
           black: '#191414',
           darkgray: '#121212',

@@ -65,7 +65,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {isSignUp ? 'Sign up for Spotify' : 'Log in to Spotify'}
+            {isSignUp ? 'Sign up for ydvmusic' : 'Log in to ydvmusic'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             {isSignUp ? 'Create your account to get started' : 'Welcome back! Please sign in to continue'}

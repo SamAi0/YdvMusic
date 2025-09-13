@@ -229,7 +229,7 @@ const Player: React.FC<PlayerProps> = ({
                 style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
               ></div>
             </div>
-            <span className="text-xs text-gray-400">{formatTime(duration || currentSong.duration)}</span>
+            <span className="text-xs text-gray-400">{formatTime(duration || (typeof currentSong.duration === 'number' ? currentSong.duration : 0))}</span>
           </div>
         </div>
 

@@ -77,7 +77,7 @@ const SongCard: React.FC<SongCardProps> = ({
           </button>
         )}
         <span className="text-gray-400 text-sm mr-2">
-          {formatDuration(song.duration)}
+          {typeof song.duration === 'number' ? formatDuration(song.duration) : song.duration}
         </span>
         <button className="opacity-0 group-hover:opacity-100 transition-opacity">
           <Play className="w-5 h-5 text-green-500" />

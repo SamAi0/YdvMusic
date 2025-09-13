@@ -13,7 +13,7 @@ interface MainContentProps {
   onSongSelect: (song: Song) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  setCurrentView: (view: string) => void;
+  setCurrentView?: (view: string) => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({ 
@@ -169,7 +169,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   <div
                     key={playlist.id}
                     className="bg-gray-800 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
-                    onClick={() => setCurrentView(`playlist:${playlist.id}`)}
+                    onClick={() => setCurrentView && setCurrentView(`playlist:${playlist.id}`)}
                   >
                     <div className="relative mb-4">
                       <img
@@ -245,7 +245,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 <h2 className="text-xl font-semibold mb-4">No liked songs yet</h2>
                 <p className="text-gray-400 mb-6">Start exploring music and like songs you enjoy!</p>
                 <button
-                  onClick={() => setCurrentView('search')}
+                  onClick={() => setCurrentView && setCurrentView('search')}
                   className="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors"
                 >
                   Discover Music
@@ -301,7 +301,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 <h2 className="text-xl font-semibold mb-4">This playlist is empty</h2>
                 <p className="text-gray-400 mb-6">Add some songs to get started!</p>
                 <button
-                  onClick={() => setCurrentView('search')}
+                  onClick={() => setCurrentView && setCurrentView('search')}
                   className="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors"
                 >
                   Find Music
@@ -337,7 +337,7 @@ const MainContent: React.FC<MainContentProps> = ({
               <div
                 key={playlist.id}
                 className="bg-gray-800 dark:bg-gray-700 rounded-md flex items-center p-2 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
-                onClick={() => setCurrentView(`playlist:${playlist.id}`)}
+                onClick={() => setCurrentView && setCurrentView(`playlist:${playlist.id}`)}
               >
                 <img
                   src={playlist.cover_url || 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=300'}
