@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, Music, Users, Disc, Edit, Trash2, Play, Pause, Settings, Eye, Search, Plus, X, Save, AlertTriangle } from 'lucide-react';
+import { Upload, Music, Users, Disc, Edit, Trash2, Play, Pause, Settings, Eye, Search, Plus, X, Save, AlertTriangle, Shield } from 'lucide-react';
 import UploadSong from './UploadSong';
+import AdminEmailManager from './AdminEmailManager';
 import { availableSongs } from '../utils/localData';
 import { Song } from '../hooks/useAPI';
 import toast from 'react-hot-toast';
 
-type TabKey = 'overview' | 'upload' | 'songs' | 'artists' | 'albums' | 'users';
+type TabKey = 'overview' | 'upload' | 'songs' | 'artists' | 'albums' | 'users' | 'settings';
 
 interface EditingSong {
   id: string;
@@ -193,6 +194,7 @@ const AdminDashboard: React.FC = () => {
             ['artists', 'Artists', Users],
             ['albums', 'Albums', Disc],
             ['users', 'Users', Users],
+            ['settings', 'Admin Settings', Settings],
           ] as [TabKey, string, any][]).map(([key, label, Icon]) => (
             <button
               key={key}
@@ -446,6 +448,18 @@ const AdminDashboard: React.FC = () => {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {tab === 'settings' && (
+          <div className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Admin Settings</h2>
+              <p className="text-gray-400">Configure admin access and system settings</p>
+            </div>
+            
+            <AdminEmailManager />
           </div>
         )}
 

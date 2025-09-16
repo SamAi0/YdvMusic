@@ -2,6 +2,35 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { LocalUser, saveUser, getUser, removeUser } from '../utils/localData';
 
+// Admin email configuration
+const getAdminEmails = (): string[] => {
+  const adminEmails = import.meta.env.VITE_ADMIN_EMAILS || '';
+  return adminEmails
+    .split(',')
+    .map((email: string) => email.trim().toLowerCase())
+    .filter((email: string) => email.length > 0);
+};
+
+const isAdminEmail = (email: string): boolean => {
+  const adminEmails = getAdminEmails();
+  const requireExactMatch = import.meta.env.VITE_ADMIN_REQUIRE_EXACT_MATCH === 'true';
+  const fallbackKeyword = import.meta.env.VITE_ADMIN_FALLBACK_KEYWORD || 'admin';
+  
+  const normalizedEmail = email.toLowerCase();
+  
+  // Check exact match against admin email list
+  if (adminEmails.length > 0 && adminEmails.includes(normalizedEmail)) {
+    return true;
+  }
+  
+  // Fallback to keyword matching if exact match not required
+  if (!requireExactMatch && fallbackKeyword) {
+    return normalizedEmail.includes(fallbackKeyword);
+  }
+  
+  return false;
+};
+
 interface AuthContextType {
   user: LocalUser | null;
   loading: boolean;
@@ -47,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: Date.now().toString(),
       email,
       fullName,
-      isAdmin: email.includes('admin'), // Make admin if email contains 'admin'
+      isAdmin: isAdminEmail(email), // Check against admin email list
       joinedDate: new Date().toISOString()
     };
     
@@ -68,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: Date.now().toString(),
       email,
       fullName: email.split('@')[0],
-      isAdmin: email.includes('admin'),
+      isAdmin: isAdminEmail(email),
       joinedDate: new Date().toISOString()
     };
     
