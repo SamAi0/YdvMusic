@@ -1,8 +1,9 @@
 import React from 'react';
-import { Play, Heart, HeartOff, Plus } from 'lucide-react';
+import { Play, Heart, HeartOff, Plus, Download } from 'lucide-react';
 import { Song } from '../hooks/useAPI';
 import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface SongCardProps {
   song: Song;
@@ -36,6 +37,33 @@ const SongCard: React.FC<SongCardProps> = ({
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!song.audio_url) {
+      toast.error('Audio file not available for download');
+      return;
+    }
+    
+    try {
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = song.audio_url;
+      link.download = `${song.artist?.name} - ${song.title}.mp3`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Downloading "${song.title}"`);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download song');
+    }
   };
 
   return (
@@ -72,10 +100,18 @@ const SongCard: React.FC<SongCardProps> = ({
               onAddToPlaylist(song);
             }}
             className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-green-500"
+            title="Add to playlist"
           >
             <Plus className="w-4 h-4" />
           </button>
         )}
+        <button
+          onClick={handleDownload}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
+          title="Download song"
+        >
+          <Download className="w-4 h-4" />
+        </button>
         <span className="text-gray-400 text-sm mr-2">
           {typeof song.duration === 'number' ? formatDuration(song.duration) : song.duration}
         </span>

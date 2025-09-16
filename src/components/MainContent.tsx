@@ -123,7 +123,7 @@ const MainContent: React.FC<MainContentProps> = ({
               <div className="mt-8">
                 <h2 className="text-xl font-bold mb-4">Browse all</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['Pop', 'Rock', 'Hip-Hop', 'Jazz', 'Classical', 'Electronic', 'Country', 'R&B'].map((genre) => (
+                  {['Romantic Songs', 'Sad / Heartbreak Songs', 'Fun Songs', 'Devotional / Bhajans', 'Patriotic Songs', 'Festive Songs'].map((genre) => (
                     <div
                       key={genre}
                       className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform"

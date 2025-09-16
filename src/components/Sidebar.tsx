@@ -20,7 +20,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
     <>
       <div className="w-64 bg-black dark:bg-black text-white p-6 flex flex-col h-full">
         {/* Logo */}
-        <div className="flex items-center mb-8">
+        <div 
+          className="flex items-center mb-8 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => setCurrentView('home')}
+          title="Go to Home"
+        >
           <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-2">
             <span className="text-black font-bold text-sm">♪</span>
           </div>
