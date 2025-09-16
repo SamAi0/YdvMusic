@@ -1,8 +1,9 @@
-import React from 'react';
-import { Play, Heart, HeartOff, Plus, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Heart, HeartOff, Plus, Download, MoreVertical, ListPlus, SkipForward } from 'lucide-react';
 import { Song } from '../hooks/useAPI';
 import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../contexts/AuthContext';
+import { useQueue } from '../contexts/QueueContext';
 import toast from 'react-hot-toast';
 
 interface SongCardProps {
@@ -20,6 +21,8 @@ const SongCard: React.FC<SongCardProps> = ({
 }) => {
   const { user } = useAuth();
   const { likedSongs, toggleLikeSong } = useAPI();
+  const { addToQueue, playNext, setQueue } = useQueue();
+  const [showMenu, setShowMenu] = useState(false);
 
   const isLiked = likedSongs.includes(song.id);
 
@@ -31,6 +34,27 @@ const SongCard: React.FC<SongCardProps> = ({
     } catch (error) {
       console.error('Error toggling like:', error);
     }
+  };
+
+  const handlePlayNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playNext(song);
+    setShowMenu(false);
+  };
+
+  const handleAddToQueue = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToQueue(song);
+    setShowMenu(false);
+  };
+
+  const handlePlayNow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Set this song as a new queue and start playing
+    setQueue([song], 0);
+    onPlay(song);
+    setShowMenu(false);
+    toast.success(`Now playing: ${song.title}`);
   };
 
   const formatDuration = (seconds: number) => {
@@ -80,7 +104,7 @@ const SongCard: React.FC<SongCardProps> = ({
         <p className="text-white dark:text-white font-medium truncate">{song.title}</p>
         <p className="text-gray-400 text-sm truncate">{song.artist?.name}</p>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 relative">
         {user && (
           <button
             onClick={handleLikeToggle}
@@ -93,29 +117,78 @@ const SongCard: React.FC<SongCardProps> = ({
             )}
           </button>
         )}
-        {showAddToPlaylist && onAddToPlaylist && (
+        
+        {/* More Options Menu */}
+        <div className="relative">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onAddToPlaylist(song);
+              setShowMenu(!showMenu);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-green-500"
-            title="Add to playlist"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+            title="More options"
           >
-            <Plus className="w-4 h-4" />
+            <MoreVertical className="w-4 h-4" />
           </button>
-        )}
-        <button
-          onClick={handleDownload}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
-          title="Download song"
-        >
-          <Download className="w-4 h-4" />
-        </button>
+          
+          {showMenu && (
+            <div className="absolute right-0 top-6 bg-gray-800 rounded-md shadow-lg z-50 py-1 min-w-[160px] border border-gray-700">
+              <button
+                onClick={handlePlayNow}
+                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+              >
+                <Play className="w-4 h-4" />
+                <span>Play Now</span>
+              </button>
+              <button
+                onClick={handlePlayNext}
+                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+              >
+                <SkipForward className="w-4 h-4" />
+                <span>Play Next</span>
+              </button>
+              <button
+                onClick={handleAddToQueue}
+                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+              >
+                <ListPlus className="w-4 h-4" />
+                <span>Add to Queue</span>
+              </button>
+              {showAddToPlaylist && onAddToPlaylist && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToPlaylist(song);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add to Playlist</span>
+                </button>
+              )}
+              <hr className="border-gray-700 my-1" />
+              <button
+                onClick={handleDownload}
+                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download</span>
+              </button>
+            </div>
+          )}
+        </div>
+        
         <span className="text-gray-400 text-sm mr-2">
           {typeof song.duration === 'number' ? formatDuration(song.duration) : song.duration}
         </span>
-        <button className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPlay(song);
+          }}
+        >
           <Play className="w-5 h-5 text-green-500" />
         </button>
       </div>

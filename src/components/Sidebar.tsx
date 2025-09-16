@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Home, Search, Library, Plus, Heart, ChevronDown, Sun, Moon, LogOut, Upload } from 'lucide-react';
+import { Home, Search, Library, Plus, Heart, ChevronDown, Sun, Moon, LogOut, Upload, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAPI } from '../hooks/useAPI';
 import CreatePlaylistModal from './CreatePlaylistModal';
+import Profile from './Profile';
 
 interface SidebarProps {
   currentView: string;
@@ -15,6 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
   const { theme, toggleTheme } = useTheme();
   const { playlists } = useAPI();
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   return (
     <>
@@ -131,9 +133,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
 
           {user && (
             <div className="flex items-center justify-between">
-              <div className="flex items-center min-w-0 flex-1">
-                <div className="w-8 h-8 bg-gray-600 rounded-full mr-2 flex-shrink-0"></div>
-                <span className="text-sm truncate">{user.email}</span>
+              <div className="flex items-center min-w-0 flex-1 cursor-pointer" onClick={() => setShowProfile(true)}>
+                <div className="w-8 h-8 bg-gray-600 rounded-full mr-2 flex-shrink-0 flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm truncate">{user.fullName || user.email}</span>
               </div>
               <div className="flex items-center space-x-1 ml-2">
                 <button
@@ -154,6 +158,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
         isOpen={showCreatePlaylist}
         onClose={() => setShowCreatePlaylist(false)}
       />
+      
+      {showProfile && (
+        <Profile onClose={() => setShowProfile(false)} />
+      )}
     </>
   );
 };

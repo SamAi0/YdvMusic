@@ -350,6 +350,17 @@ export interface LocalUser {
   email: string;
   fullName: string;
   isAdmin: boolean;
+  username?: string;
+  bio?: string;
+  avatar_url?: string;
+  dateOfBirth?: string;
+  country?: string;
+  favoriteGenres?: string[];
+  isPrivate?: boolean;
+  joinedDate: string;
+  totalListeningTime?: number;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 export const saveUser = (user: LocalUser): void => {
@@ -452,4 +463,164 @@ export const toggleLikedSong = (userId: string, songId: string): boolean => {
 // Generate unique IDs
 export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
+
+// Profile management
+const PROFILE_STATS_KEY = 'ydvmusic_profile_stats';
+const USER_PREFERENCES_KEY = 'ydvmusic_user_preferences';
+
+export interface ProfileStats {
+  totalSongsPlayed: number;
+  totalListeningTime: number; // in seconds
+  favoriteArtists: { [artistId: string]: number };
+  favoriteGenres: { [genre: string]: number };
+  dailyListening: { [date: string]: number };
+  streakDays: number;
+  lastActiveDate: string;
+  thisMonthSongs?: number;
+  thisMonthTime?: number;
+  favoriteArtistsCount?: number;
+  favoriteGenresCount?: number;
+}
+
+export interface UserPreferences {
+  theme: 'light' | 'dark' | 'auto';
+  autoPlay: boolean;
+  showExplicitContent: boolean;
+  defaultVolume: number;
+  crossfadeSeconds: number;
+  notificationsEnabled: boolean;
+  emailUpdates: boolean;
+  crossfade?: boolean;
+  highQuality?: boolean;
+  privateProfile?: boolean;
+  hideActivity?: boolean;
+  emailNotifications?: boolean;
+  desktopNotifications?: boolean;
+}
+
+export const getProfileStats = (userId: string): ProfileStats => {
+  const statsData = localStorage.getItem(PROFILE_STATS_KEY);
+  const allStats: { [userId: string]: ProfileStats } = statsData ? JSON.parse(statsData) : {};
+  const baseStats = allStats[userId] || {
+    totalSongsPlayed: 0,
+    totalListeningTime: 0,
+    favoriteArtists: {},
+    favoriteGenres: {},
+    dailyListening: {},
+    streakDays: 0,
+    lastActiveDate: new Date().toISOString().split('T')[0]
+  };
+
+  // Calculate this month's statistics
+  const now = new Date();
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  let thisMonthSongs = 0;
+  let thisMonthTime = 0;
+  
+  Object.entries(baseStats.dailyListening).forEach(([date, time]) => {
+    if (date.startsWith(currentMonth)) {
+      thisMonthSongs += 1;
+      thisMonthTime += time;
+    }
+  });
+
+  return {
+    ...baseStats,
+    thisMonthSongs,
+    thisMonthTime,
+    favoriteArtistsCount: Object.keys(baseStats.favoriteArtists).length,
+    favoriteGenresCount: Object.keys(baseStats.favoriteGenres).length
+  };
+};
+
+export const saveProfileStats = (userId: string, stats: ProfileStats): void => {
+  const statsData = localStorage.getItem(PROFILE_STATS_KEY);
+  const allStats: { [userId: string]: ProfileStats } = statsData ? JSON.parse(statsData) : {};
+  allStats[userId] = stats;
+  localStorage.setItem(PROFILE_STATS_KEY, JSON.stringify(allStats));
+};
+
+export const getUserPreferences = (userId: string): UserPreferences => {
+  const prefsData = localStorage.getItem(USER_PREFERENCES_KEY);
+  const allPrefs: { [userId: string]: UserPreferences } = prefsData ? JSON.parse(prefsData) : {};
+  return allPrefs[userId] || {
+    theme: 'dark',
+    autoPlay: true,
+    showExplicitContent: true,
+    defaultVolume: 50,
+    crossfadeSeconds: 0,
+    notificationsEnabled: true,
+    emailUpdates: false
+  };
+};
+
+export const saveUserPreferences = (userId: string, preferences: UserPreferences): void => {
+  const prefsData = localStorage.getItem(USER_PREFERENCES_KEY);
+  const allPrefs: { [userId: string]: UserPreferences } = prefsData ? JSON.parse(prefsData) : {};
+  allPrefs[userId] = preferences;
+  localStorage.setItem(USER_PREFERENCES_KEY, JSON.stringify(allPrefs));
+};
+
+// Update listening statistics
+export const updateListeningStats = (userId: string, songId: string, artistName: string, genre: string, duration: number): void => {
+  const stats = getProfileStats(userId);
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Update basic stats
+  stats.totalSongsPlayed += 1;
+  stats.totalListeningTime += duration;
+  
+  // Update favorite artists
+  const artistKey = artistName || 'Unknown Artist';
+  stats.favoriteArtists[artistKey] = (stats.favoriteArtists[artistKey] || 0) + 1;
+  
+  // Update favorite genres
+  if (genre) {
+    stats.favoriteGenres[genre] = (stats.favoriteGenres[genre] || 0) + 1;
+  }
+  
+  // Update daily listening
+  stats.dailyListening[today] = (stats.dailyListening[today] || 0) + duration;
+  
+  // Update streak
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  
+  if (stats.lastActiveDate === yesterdayStr) {
+    stats.streakDays += 1;
+  } else if (stats.lastActiveDate !== today) {
+    stats.streakDays = 1;
+  }
+  
+  stats.lastActiveDate = today;
+  
+  saveProfileStats(userId, stats);
+};
+
+// Get user's top items
+export const getTopArtists = (userId: string, limit: number = 5): Array<{name: string; playCount: number}> => {
+  const stats = getProfileStats(userId);
+  return Object.entries(stats.favoriteArtists)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, limit)
+    .map(([name, playCount]) => ({ name, playCount }));
+};
+
+export const getTopGenres = (userId: string, limit: number = 5): Array<{name: string; playCount: number}> => {
+  const stats = getProfileStats(userId);
+  return Object.entries(stats.favoriteGenres)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, limit)
+    .map(([name, playCount]) => ({ name, playCount }));
+};
+
+// Update user profile
+export const updateUserProfile = (updates: Partial<LocalUser>): void => {
+  const currentUser = getUser();
+  if (currentUser) {
+    const updatedUser = { ...currentUser, ...updates };
+    saveUser(updatedUser);
+  }
 };

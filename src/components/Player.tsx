@@ -1,45 +1,249 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, Heart, HeartOff } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, Heart, HeartOff, List } from 'lucide-react';
 import { Song } from '../hooks/useAPI';
 import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../contexts/AuthContext';
+import { useQueue } from '../contexts/QueueContext';
+import Queue from './Queue';
+import toast from 'react-hot-toast';
 
 interface PlayerProps {
   currentSong: Song | null;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
-  onNext?: () => void;
-  onPrevious?: () => void;
-  shuffle: boolean;
-  setShuffle: (shuffle: boolean) => void;
-  repeat: 'off' | 'all' | 'one';
-  setRepeat: (repeat: 'off' | 'all' | 'one') => void;
+  onSongSelect: (song: Song) => void;
 }
 
 const Player: React.FC<PlayerProps> = ({ 
   currentSong, 
   isPlaying, 
   setIsPlaying,
-  onNext,
-  onPrevious,
-  shuffle,
-  setShuffle,
-  repeat,
-  setRepeat
+  onSongSelect
 }) => {
   const { user } = useAuth();
   const { likedSongs, toggleLikeSong } = useAPI();
+  const {
+    queue,
+    currentIndex,
+    shuffle,
+    repeat,
+    smartShuffle,
+    next,
+    previous,
+    setShuffle,
+    setRepeat,
+    setSmartShuffle
+  } = useQueue();
+  
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(50);
+  const [showQueue, setShowQueue] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const isPremium = user?.isAdmin || false;
+
+  // Enhanced Play/Pause functionality
+  const handlePlayPause = () => {
+    if (!currentSong) return;
+    
+    if (isPlaying) {
+      setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    } else {
+      setIsPlaying(true);
+      if (audioRef.current) {
+        audioRef.current.play().catch(console.error);
+      }
+    }
+  };
+
+  // Enhanced Skip functionality with queue awareness
+  const handleNext = () => {
+    if (queue.length === 0) {
+      toast('No songs in queue');
+      return;
+    }
+    
+    // Handle repeat modes
+    if (repeat === 'one') {
+      // Restart current song
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        if (isPlaying) {
+          audioRef.current.play().catch(console.error);
+        }
+      }
+      return;
+    }
+    
+    next();
+    toast.success('Next track');
+  };
+
+  const handlePrevious = () => {
+    if (queue.length === 0) {
+      toast('No songs in queue');
+      return;
+    }
+    
+    // If more than 3 seconds into the song, restart it
+    if (currentTime > 3) {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+      }
+      return;
+    }
+    
+    previous();
+    toast.success('Previous track');
+  };
+
+  // Enhanced Shuffle functionality
+  const handleShuffleToggle = () => {
+    if (isPremium && shuffle) {
+      // Toggle Smart Shuffle for premium users
+      setSmartShuffle(!smartShuffle);
+      toast.success(smartShuffle ? 'Smart Shuffle disabled' : 'Smart Shuffle enabled');
+    } else {
+      // Toggle regular shuffle
+      setShuffle(!shuffle);
+      toast.success(shuffle ? 'Shuffle disabled' : 'Shuffle enabled');
+    }
+  };
+
+  // Enhanced Repeat functionality
+  const handleRepeatClick = () => {
+    const modes: ('off' | 'all' | 'one')[] = ['off', 'all', 'one'];
+    const currentModeIndex = modes.indexOf(repeat);
+    const nextMode = modes[(currentModeIndex + 1) % modes.length];
+    setRepeat(nextMode);
+    
+    const modeLabels = {
+      'off': 'Repeat disabled',
+      'all': 'Repeat all songs',
+      'one': 'Repeat current song'
+    };
+    
+    toast.success(modeLabels[nextMode]);
+  };
+
+  const getShuffleButtonColor = () => {
+    if (smartShuffle && isPremium) return 'text-purple-500';
+    if (shuffle) return 'text-green-500';
+    return 'text-gray-400 hover:text-white';
+  };
+
+  const getShuffleButtonTitle = () => {
+    if (smartShuffle && isPremium) return 'Smart Shuffle';
+    if (shuffle) return 'Shuffle On';
+    return 'Shuffle Off';
+  };
+
+  const getRepeatButtonColor = () => {
+    switch (repeat) {
+      case 'all':
+        return 'text-green-500';
+      case 'one':
+        return 'text-blue-500';
+      default:
+        return 'text-gray-400 hover:text-white';
+    }
+  };
+
+  const getRepeatButtonTitle = () => {
+    switch (repeat) {
+      case 'off':
+        return 'Enable repeat';
+      case 'all':
+        return 'Repeat all songs';
+      case 'one':
+        return 'Repeat current song';
+      default:
+        return 'Repeat';
+    }
+  };
+
+  // Update current song when queue or currentIndex changes
+  useEffect(() => {
+    if (queue.length > 0 && queue[currentIndex] && queue[currentIndex] !== currentSong) {
+      onSongSelect(queue[currentIndex]);
+    }
+  }, [queue, currentIndex, onSongSelect, currentSong]);
+
+  // Enhanced auto-play functionality
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(console.error);
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
+
+  // Keyboard controls for basic playback
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Prevent if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          handlePlayPause();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          handleNext();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          handlePrevious();
+          break;
+        case 'KeyS':
+          e.preventDefault();
+          handleShuffleToggle();
+          break;
+        case 'KeyR':
+          e.preventDefault();
+          handleRepeatClick();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  // Auto-play next song when current ends
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handleEnded = () => {
+        if (repeat === 'one') {
+          audio.currentTime = 0;
+          audio.play().catch(console.error);
+        } else {
+          handleNext();
+        }
+      };
+      
+      audio.addEventListener('ended', handleEnded);
+      return () => audio.removeEventListener('ended', handleEnded);
+    }
+  }, [repeat, handleNext]);
 
   useEffect(() => {
     if (currentSong && audioRef.current) {
       console.log('Loading song:', currentSong.title, 'Audio URL:', currentSong.audio_url);
       audioRef.current.currentTime = 0;
       
-      // Add error event listener
       const handleError = (e: Event) => {
         console.error('Audio load error for song:', currentSong.title, e);
         console.error('Audio URL that failed:', currentSong.audio_url);
@@ -58,7 +262,6 @@ const Player: React.FC<PlayerProps> = ({
         });
       }
       
-      // Cleanup event listeners
       return () => {
         if (audioRef.current) {
           audioRef.current.removeEventListener('error', handleError);
@@ -67,16 +270,6 @@ const Player: React.FC<PlayerProps> = ({
       };
     }
   }, [currentSong]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play().catch(console.error);
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
@@ -115,13 +308,6 @@ const Player: React.FC<PlayerProps> = ({
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleRepeatClick = () => {
-    const modes: ('off' | 'all' | 'one')[] = ['off', 'all', 'one'];
-    const currentIndex = modes.indexOf(repeat);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    setRepeat(modes[nextIndex]);
   };
 
   const isLiked = currentSong ? likedSongs.includes(currentSong.id) : false;
@@ -175,10 +361,8 @@ const Player: React.FC<PlayerProps> = ({
         onEnded={() => {
           if (repeat === 'one') {
             audioRef.current?.play();
-          } else if (onNext) {
-            onNext();
           } else {
-            setIsPlaying(false);
+            handleNext();
           }
         }}
         src={currentSong.audio_url || undefined}
@@ -214,41 +398,57 @@ const Player: React.FC<PlayerProps> = ({
         {/* Player Controls */}
         <div className="flex flex-col items-center flex-1 max-w-md mx-8">
           <div className="flex items-center space-x-4 mb-2">
+            {/* Shuffle Button */}
             <button
-              onClick={() => setShuffle(!shuffle)}
-              className={`transition-colors ${
-                shuffle ? 'text-green-500' : 'text-gray-400 hover:text-white'
-              }`}
+              onClick={handleShuffleToggle}
+              className={`transition-colors relative ${getShuffleButtonColor()}`}
+              title={getShuffleButtonTitle()}
             >
               <Shuffle className="w-4 h-4" />
+              {smartShuffle && isPremium && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full"></span>
+              )}
             </button>
+            
+            {/* Previous Button */}
             <button
-              onClick={onPrevious}
+              onClick={handlePrevious}
               className="text-gray-400 hover:text-white transition-colors"
+              title="Previous (or restart if >3s)"
             >
               <SkipBack className="w-5 h-5" />
             </button>
+            
+            {/* Play/Pause Button */}
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="bg-white text-black rounded-full w-8 h-8 flex items-center justify-center hover:scale-105 transition-transform"
+              onClick={handlePlayPause}
+              className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-transform"
+              title={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
             </button>
+            
+            {/* Next Button */}
             <button
-              onClick={onNext}
+              onClick={handleNext}
               className="text-gray-400 hover:text-white transition-colors"
+              title="Next track"
             >
               <SkipForward className="w-5 h-5" />
             </button>
+            
+            {/* Repeat Button */}
             <button
               onClick={handleRepeatClick}
-              className={`transition-colors ${
-                repeat !== 'off' ? 'text-green-500' : 'text-gray-400 hover:text-white'
-              }`}
+              className={`transition-colors relative ${getRepeatButtonColor()}`}
+              title={getRepeatButtonTitle()}
             >
               <Repeat className="w-4 h-4" />
               {repeat === 'one' && (
-                <span className="absolute -mt-2 -ml-1 text-xs">1</span>
+                <span className="absolute -top-1 -right-1 text-xs font-bold text-blue-400">1</span>
+              )}
+              {repeat === 'all' && (
+                <span className="absolute -top-1 -right-1 text-xs font-bold text-green-400">∞</span>
               )}
             </button>
           </div>
@@ -269,9 +469,24 @@ const Player: React.FC<PlayerProps> = ({
           </div>
         </div>
 
-        {/* Volume Controls */}
-        <div className="flex items-center justify-end flex-1">
-          <Volume2 className="w-4 h-4 text-gray-400 mr-2" />
+        {/* Volume Controls & Queue */}
+        <div className="flex items-center justify-end flex-1 space-x-4">
+          {/* Queue Button */}
+          <button
+            onClick={() => setShowQueue(true)}
+            className="text-gray-400 hover:text-white transition-colors relative"
+            title="Show Queue"
+          >
+            <List className="w-4 h-4" />
+            {queue.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {queue.length}
+              </span>
+            )}
+          </button>
+          
+          {/* Volume Controls */}
+          <Volume2 className="w-4 h-4 text-gray-400" />
           <div
             className="w-20 bg-gray-600 h-1 rounded-full cursor-pointer"
             onClick={handleVolumeChange}
@@ -283,6 +498,14 @@ const Player: React.FC<PlayerProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Queue Modal */}
+      <Queue
+        isOpen={showQueue}
+        onClose={() => setShowQueue(false)}
+        currentSong={currentSong}
+        onSongSelect={onSongSelect}
+      />
     </div>
   );
 };
