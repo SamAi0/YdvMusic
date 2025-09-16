@@ -3,7 +3,33 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Check for valid Supabase configuration
+let supabase;
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('placeholder') || supabaseAnonKey.includes('placeholder')) {
+  console.warn('⚠️ Supabase not configured properly in frontend. Auth features will not work.');
+  
+  // Create a mock client for development
+  supabase = {
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      signOut: () => Promise.resolve({ error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => Promise.resolve({ data: [], error: null }),
+      insert: () => Promise.resolve({ data: null, error: { message: 'Database not configured' } }),
+      update: () => Promise.resolve({ data: null, error: null }),
+      delete: () => Promise.resolve({ data: null, error: null })
+    })
+  };
+} else {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+}
+
+export { supabase };
 
 export type Json =
   | string

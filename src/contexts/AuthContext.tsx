@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { LocalUser, saveUser, getUser, removeUser } from '../utils/localData';
 
 interface AuthContextType {
-  user: User | null;
+  user: LocalUser | null;
   loading: boolean;
   isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
@@ -23,94 +22,64 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<LocalUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsAdmin(
-        session?.user?.user_metadata?.is_admin === true ||
-        (Array.isArray(session?.user?.app_metadata?.roles) && session?.user?.app_metadata?.roles.includes('admin'))
-      );
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setIsAdmin(
-          session?.user?.user_metadata?.is_admin === true ||
-          (Array.isArray(session?.user?.app_metadata?.roles) && session?.user?.app_metadata?.roles.includes('admin'))
-        );
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Create or update profile
-          const { error } = await supabase
-            .from('profiles')
-            .upsert({
-              id: session.user.id,
-              username: session.user.email?.split('@')[0],
-              full_name: session.user.user_metadata?.full_name,
-              avatar_url: session.user.user_metadata?.avatar_url,
-            });
-          
-          if (error) {
-            console.error('Error creating profile:', error);
-          }
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    // Load user from localStorage on app start
+    const savedUser = getUser();
+    if (savedUser) {
+      setUser(savedUser);
+      setIsAdmin(savedUser.isAdmin);
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-
-    if (error) {
-      toast.error(error.message);
-      throw error;
+    // Simple validation
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      throw new Error('Password too short');
     }
 
+    const newUser: LocalUser = {
+      id: Date.now().toString(),
+      email,
+      fullName,
+      isAdmin: email.includes('admin') // Make admin if email contains 'admin'
+    };
+    
+    saveUser(newUser);
+    setUser(newUser);
+    setIsAdmin(newUser.isAdmin);
     toast.success('Account created successfully!');
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      throw error;
+    // Simple validation - in a real app, this would verify credentials
+    if (!email || !password) {
+      toast.error('Please enter email and password');
+      throw new Error('Missing credentials');
     }
 
+    const user: LocalUser = {
+      id: Date.now().toString(),
+      email,
+      fullName: email.split('@')[0],
+      isAdmin: email.includes('admin')
+    };
+    
+    saveUser(user);
+    setUser(user);
+    setIsAdmin(user.isAdmin);
     toast.success('Signed in successfully!');
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      toast.error(error.message);
-      throw error;
-    }
-
+    removeUser();
+    setUser(null);
+    setIsAdmin(false);
     toast.success('Signed out successfully!');
   };
 

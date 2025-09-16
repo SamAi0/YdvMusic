@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react';
-import { musicAPI, playlistAPI, likesAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import {
+  availableSongs,
+  getPlaylists,
+  savePlaylist,
+  deletePlaylist as deletePlaylistFromStorage,
+  getPlaylistById,
+  addSongToPlaylist as addSongToPlaylistStorage,
+  removeSongFromPlaylist as removeSongFromPlaylistStorage,
+  getLikedSongs,
+  toggleLikedSong,
+  generateId
+} from '../utils/localData';
 
 export interface Song {
   id: string;
@@ -45,11 +56,18 @@ export const useAPI = () => {
   const fetchSongs = async (searchQuery?: string) => {
     setLoading(true);
     try {
-      const data = await musicAPI.getSongs({ 
-        search: searchQuery,
-        limit: 50 
-      });
-      setSongs(data);
+      let filteredSongs = availableSongs;
+      
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredSongs = availableSongs.filter(song => 
+          song.title.toLowerCase().includes(query) ||
+          song.artist?.name.toLowerCase().includes(query) ||
+          song.genre?.toLowerCase().includes(query)
+        );
+      }
+      
+      setSongs(filteredSongs);
     } catch (error) {
       console.error('Error fetching songs:', error);
       toast.error('Failed to fetch songs');
@@ -63,8 +81,8 @@ export const useAPI = () => {
     if (!user) return;
 
     try {
-      const data = await playlistAPI.getUserPlaylists();
-      setPlaylists(data);
+      const userPlaylists = getPlaylists(user.id);
+      setPlaylists(userPlaylists);
     } catch (error) {
       console.error('Error fetching playlists:', error);
       toast.error('Failed to fetch playlists');
@@ -76,8 +94,8 @@ export const useAPI = () => {
     if (!user) return;
 
     try {
-      const data = await likesAPI.getLikedSongs();
-      setLikedSongs(data.map((song: Song) => song.id));
+      const likedSongIds = getLikedSongs(user.id);
+      setLikedSongs(likedSongIds);
     } catch (error) {
       console.error('Error fetching liked songs:', error);
     }
@@ -88,10 +106,22 @@ export const useAPI = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      const data = await playlistAPI.createPlaylist({ name, description });
-      setPlaylists(prev => [data, ...prev]);
+      const newPlaylist: Playlist = {
+        id: generateId(),
+        name,
+        description: description || null,
+        cover_url: null,
+        is_public: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: user.id,
+        songs: []
+      };
+      
+      savePlaylist(newPlaylist);
+      setPlaylists(prev => [newPlaylist, ...prev]);
       toast.success('Playlist created successfully!');
-      return data;
+      return newPlaylist;
     } catch (error) {
       console.error('Error creating playlist:', error);
       toast.error('Failed to create playlist');
@@ -104,11 +134,27 @@ export const useAPI = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      await playlistAPI.addSongToPlaylist(playlistId, songId);
+      addSongToPlaylistStorage(playlistId, songId);
+      await fetchPlaylists(); // Refresh playlists
       toast.success('Song added to playlist!');
     } catch (error) {
       console.error('Error adding song to playlist:', error);
       toast.error('Failed to add song to playlist');
+      throw error;
+    }
+  };
+
+  // Remove song from playlist
+  const removeSongFromPlaylist = async (playlistId: string, songId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      removeSongFromPlaylistStorage(playlistId, songId);
+      await fetchPlaylists(); // Refresh playlists
+      toast.success('Song removed from playlist!');
+    } catch (error) {
+      console.error('Error removing song from playlist:', error);
+      toast.error('Failed to remove song from playlist');
       throw error;
     }
   };
@@ -118,17 +164,14 @@ export const useAPI = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      const isLiked = likedSongs.includes(songId);
-
-      if (isLiked) {
-        await likesAPI.unlikeSong(songId);
-        setLikedSongs(prev => prev.filter(id => id !== songId));
-        toast.success('Removed from liked songs');
-      } else {
-        await likesAPI.likeSong(songId);
-        setLikedSongs(prev => [...prev, songId]);
-        toast.success('Added to liked songs');
-      }
+      const isNowLiked = toggleLikedSong(user.id, songId);
+      setLikedSongs(prev => 
+        isNowLiked 
+          ? [...prev, songId]
+          : prev.filter(id => id !== songId)
+      );
+      
+      toast.success(isNowLiked ? 'Added to liked songs' : 'Removed from liked songs');
     } catch (error) {
       console.error('Error toggling like:', error);
       toast.error('Failed to update liked songs');
@@ -139,8 +182,8 @@ export const useAPI = () => {
   // Get playlist with songs
   const getPlaylistWithSongs = async (playlistId: string): Promise<Playlist | null> => {
     try {
-      const data = await playlistAPI.getPlaylist(playlistId);
-      return data;
+      const playlist = getPlaylistById(playlistId);
+      return playlist;
     } catch (error) {
       console.error('Error fetching playlist:', error);
       return null;
@@ -152,7 +195,7 @@ export const useAPI = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      await playlistAPI.deletePlaylist(playlistId);
+      deletePlaylistFromStorage(playlistId);
       setPlaylists(prev => prev.filter(p => p.id !== playlistId));
       toast.success('Playlist deleted successfully!');
     } catch (error) {
@@ -170,6 +213,9 @@ export const useAPI = () => {
     if (user) {
       fetchPlaylists();
       fetchLikedSongs();
+    } else {
+      setPlaylists([]);
+      setLikedSongs([]);
     }
   }, [user]);
 
@@ -181,6 +227,7 @@ export const useAPI = () => {
     fetchSongs,
     createPlaylist,
     addSongToPlaylist,
+    removeSongFromPlaylist,
     toggleLikeSong,
     getPlaylistWithSongs,
     deletePlaylist,
