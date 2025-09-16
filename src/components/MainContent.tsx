@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Heart, X, Plus } from 'lucide-react';
+import { Play, Heart, X, Plus, Music2, Music4, Mic2, Church, Flag, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAPI, Song, Playlist } from '../hooks/useAPI';
 import SearchBar from './SearchBar';
@@ -123,7 +123,7 @@ const MainContent: React.FC<MainContentProps> = ({
               <div className="mt-8">
                 <h2 className="text-xl font-bold mb-4">Browse all</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['Romantic Songs', 'Sad / Heartbreak Songs', 'Fun Songs', 'Devotional / Bhajans', 'Patriotic Songs', 'Festive Songs'].map((genre) => (
+                  {['Romantic Songs', 'Sad / Heartbreak Songs', 'Item Songs', 'Devotional / Bhajans', 'Patriotic Songs', 'Festive Songs'].map((genre) => (
                     <div
                       key={genre}
                       className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform"
@@ -393,34 +393,82 @@ const MainContent: React.FC<MainContentProps> = ({
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-8">{getGreeting()}{user ? `, ${user.email?.split('@')[0]}` : ''}</h1>
           
-          {/* Recently Played */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {playlists.slice(0, 6).map((playlist) => (
-              <div
-                key={playlist.id}
-                className="bg-gray-800 dark:bg-gray-700 rounded-md flex items-center p-2 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
-                onClick={() => setCurrentView && setCurrentView(`playlist:${playlist.id}`)}
-              >
-                <img
-                  src={playlist.cover_url || 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=300'}
-                  alt={playlist.name}
-                  className="w-16 h-16 rounded-md mr-4"
-                />
-                <div className="flex-1">
-                  <p className="font-medium truncate">{playlist.name}</p>
-                </div>
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity mr-2">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center hover:scale-105 transition-transform">
-                    <Play className="w-5 h-5 text-black ml-1" />
+          {/* Browse by Category Section */}
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Browse by Category</h2>
+              <p className="text-gray-400 text-sm hidden md:block">Discover music by genre</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[
+                { name: 'Romantic Songs', icon: Heart, gradient: 'from-pink-500 to-red-500', bgColor: 'bg-gradient-to-br' },
+                { name: 'Sad / Heartbreak Songs', icon: Music2, gradient: 'from-blue-500 to-purple-500', bgColor: 'bg-gradient-to-br' },
+                { name: 'Item Songs', icon: Music4, gradient: 'from-orange-500 to-yellow-500', bgColor: 'bg-gradient-to-br' },
+                { name: 'Devotional / Bhajans', icon: Church, gradient: 'from-amber-500 to-orange-600', bgColor: 'bg-gradient-to-br' },
+                { name: 'Patriotic Songs', icon: Flag, gradient: 'from-green-500 to-blue-500', bgColor: 'bg-gradient-to-br' },
+                { name: 'Festive Songs', icon: Sparkles, gradient: 'from-purple-500 to-pink-500', bgColor: 'bg-gradient-to-br' }
+              ].map((category, index) => {
+                const IconComponent = category.icon;
+                return (
+                  <div
+                    key={category.name}
+                    className={`${category.bgColor} ${category.gradient} p-6 rounded-xl cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl group relative overflow-hidden`}
+                    onClick={() => {
+                      setSearchQuery(category.name);
+                      setCurrentView && setCurrentView('search');
+                      toast.success(`Browsing ${category.name}`);
+                    }}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {/* Subtle animation overlay */}
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                    
+                    <div className="flex flex-col items-center text-center space-y-3 relative z-10">
+                      <IconComponent className="w-8 h-8 text-white group-hover:scale-110 transition-transform drop-shadow-lg" />
+                      <h3 className="font-bold text-sm text-white leading-tight drop-shadow-md">{category.name}</h3>
+                    </div>
+                    
+                    {/* Corner accent */}
+                    <div className="absolute top-0 right-0 w-8 h-8 bg-white opacity-20 rounded-bl-full transform translate-x-4 -translate-y-4 group-hover:scale-150 transition-transform duration-300"></div>
                   </div>
-                </button>
+                );
+              })}
+            </div>
+          </section>
+          
+          {/* Recently Played Playlists */}
+          {playlists.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold mb-4">Quick Access</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {playlists.slice(0, 6).map((playlist) => (
+                  <div
+                    key={playlist.id}
+                    className="bg-gray-800 dark:bg-gray-700 rounded-md flex items-center p-2 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
+                    onClick={() => setCurrentView && setCurrentView(`playlist:${playlist.id}`)}
+                  >
+                    <img
+                      src={playlist.cover_url || 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=300'}
+                      alt={playlist.name}
+                      className="w-16 h-16 rounded-md mr-4"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium truncate">{playlist.name}</p>
+                    </div>
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center hover:scale-105 transition-transform">
+                        <Play className="w-5 h-5 text-black ml-1" />
+                      </div>
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </section>
+          )}
 
-          {/* Recently played tracks */}
+          {/* Popular Songs */}
           <section>
-            <h2 className="text-2xl font-bold mb-4">Available Songs</h2>
+            <h2 className="text-2xl font-bold mb-4">Popular Songs</h2>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

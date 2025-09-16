@@ -36,10 +36,35 @@ const Player: React.FC<PlayerProps> = ({
 
   useEffect(() => {
     if (currentSong && audioRef.current) {
+      console.log('Loading song:', currentSong.title, 'Audio URL:', currentSong.audio_url);
       audioRef.current.currentTime = 0;
+      
+      // Add error event listener
+      const handleError = (e: Event) => {
+        console.error('Audio load error for song:', currentSong.title, e);
+        console.error('Audio URL that failed:', currentSong.audio_url);
+      };
+      
+      const handleCanPlay = () => {
+        console.log('Audio can play:', currentSong.title);
+      };
+      
+      audioRef.current.addEventListener('error', handleError);
+      audioRef.current.addEventListener('canplay', handleCanPlay);
+      
       if (isPlaying) {
-        audioRef.current.play().catch(console.error);
+        audioRef.current.play().catch((error) => {
+          console.error('Play error for song:', currentSong.title, error);
+        });
       }
+      
+      // Cleanup event listeners
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('error', handleError);
+          audioRef.current.removeEventListener('canplay', handleCanPlay);
+        }
+      };
     }
   }, [currentSong]);
 
@@ -137,6 +162,16 @@ const Player: React.FC<PlayerProps> = ({
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onError={(e) => {
+          console.error('Audio element error:', e);
+          console.error('Failed to load:', currentSong.audio_url);
+        }}
+        onLoadStart={() => {
+          console.log('Started loading:', currentSong.title);
+        }}
+        onCanPlay={() => {
+          console.log('Can play:', currentSong.title);
+        }}
         onEnded={() => {
           if (repeat === 'one') {
             audioRef.current?.play();
@@ -147,6 +182,7 @@ const Player: React.FC<PlayerProps> = ({
           }
         }}
         src={currentSong.audio_url || undefined}
+        preload="metadata"
       />
 
       <div className="flex items-center justify-between">
