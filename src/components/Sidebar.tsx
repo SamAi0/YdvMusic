@@ -75,15 +75,24 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
         {/* Actions */}
         <div className="mb-8">
           {user && isAdmin && (
-            <button
-              onClick={() => setCurrentView('admin')}
-              className={`flex items-center w-full text-left p-2 rounded-md transition-colors mb-4 ${
-                currentView === 'admin' ? 'bg-gray-800 text-white' : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              <Upload className="w-6 h-6 mr-3" />
-              Admin Upload
-            </button>
+            <>
+              <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-lg p-3 mb-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+                  <span className="text-green-100 text-sm font-medium">Admin Access Active</span>
+                </div>
+                <p className="text-green-100 text-xs mt-1">Full dashboard controls available</p>
+              </div>
+              <button
+                onClick={() => setCurrentView('admin')}
+                className={`flex items-center w-full text-left p-2 rounded-md transition-colors mb-4 ${
+                  currentView === 'admin' ? 'bg-gray-800 text-white' : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                <Upload className="w-6 h-6 mr-3" />
+                Admin Dashboard
+              </button>
+            </>
           )}
           <button
             onClick={() => setShowCreatePlaylist(true)}

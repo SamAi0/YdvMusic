@@ -47,7 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: Date.now().toString(),
       email,
       fullName,
-      isAdmin: email.includes('admin') // Make admin if email contains 'admin'
+      isAdmin: email.includes('admin'), // Make admin if email contains 'admin'
+      joinedDate: new Date().toISOString()
     };
     
     saveUser(newUser);
@@ -67,7 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: Date.now().toString(),
       email,
       fullName: email.split('@')[0],
-      isAdmin: email.includes('admin')
+      isAdmin: email.includes('admin'),
+      joinedDate: new Date().toISOString()
     };
     
     saveUser(user);

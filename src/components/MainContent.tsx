@@ -7,6 +7,7 @@ import SongCard from './SongCard';
 import SelectPlaylistModal from './SelectPlaylistModal';
 import AdminDashboard from './AdminDashboard';
 import AuthModal from './Auth/AuthModal';
+import ProtectedRoute from './ProtectedRoute';
 import toast from 'react-hot-toast';
 
 interface MainContentProps {
@@ -165,15 +166,26 @@ const MainContent: React.FC<MainContentProps> = ({
                     Sign In / Sign Up
                   </button>
                   <br />
-                  <button
-                    onClick={async () => {
-                      const authContext = useAuth();
-                      await authContext.signIn('demo@example.com', 'password123');
-                    }}
-                    className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors text-sm"
-                  >
-                    Quick Demo Login
-                  </button>
+                  <div className="space-x-2">
+                    <button
+                      onClick={async () => {
+                        const authContext = useAuth();
+                        await authContext.signIn('demo@example.com', 'password123');
+                      }}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors text-sm"
+                    >
+                      Demo User
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const authContext = useAuth();
+                        await authContext.signIn('admin@ydvmusic.com', 'admin123');
+                      }}
+                      className="bg-purple-500 text-white px-4 py-2 rounded-full hover:bg-purple-600 transition-colors text-sm"
+                    >
+                      Demo Admin
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -383,7 +395,11 @@ const MainContent: React.FC<MainContentProps> = ({
 
   // Admin Upload View
   if (currentView === 'admin') {
-    return <AdminDashboard />;
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <AdminDashboard />
+      </ProtectedRoute>
+    );
   }
 
   // Home View
