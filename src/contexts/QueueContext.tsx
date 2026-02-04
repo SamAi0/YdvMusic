@@ -207,6 +207,12 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     
+    // If queue is empty, nothing to do
+    if (queue.length === 0) {
+      toast.success('Queue is empty');
+      return;
+    }
+    
     const nextIndex = getNextIndex();
     
     // Handle end of queue based on repeat mode
@@ -217,6 +223,7 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toast.success('Restarting playlist');
         return;
       } else if (repeat === 'off') {
+        // End of queue reached - show message and stop
         toast.success('End of queue reached');
         return;
       }

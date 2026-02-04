@@ -79,6 +79,12 @@ const Player: React.FC<PlayerProps> = ({
       return;
     }
     
+    // Check if we're at the end of the queue and repeat is off
+    if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') {
+      toast.success('End of queue reached');
+      return;
+    }
+    
     next();
     toast.success('Next track');
   };
@@ -230,14 +236,20 @@ const Player: React.FC<PlayerProps> = ({
           audio.currentTime = 0;
           audio.play().catch(console.error);
         } else {
-          handleNext();
+          // Check if we're at the end of the queue and repeat is off
+          if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') {
+            toast.success('End of queue reached');
+            setIsPlaying(false);
+          } else {
+            handleNext();
+          }
         }
       };
       
       audio.addEventListener('ended', handleEnded);
       return () => audio.removeEventListener('ended', handleEnded);
     }
-  }, [repeat, handleNext]);
+  }, [repeat, handleNext, shuffle, currentIndex, queue.length, setIsPlaying]);
 
   useEffect(() => {
     if (currentSong && audioRef.current) {
@@ -362,7 +374,13 @@ const Player: React.FC<PlayerProps> = ({
           if (repeat === 'one') {
             audioRef.current?.play();
           } else {
-            handleNext();
+            // Check if we're at the end of the queue and repeat is off
+            if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') {
+              toast.success('End of queue reached');
+              setIsPlaying(false);
+            } else {
+              handleNext();
+            }
           }
         }}
         src={currentSong.audio_url || undefined}

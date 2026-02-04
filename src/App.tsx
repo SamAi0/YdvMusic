@@ -14,13 +14,20 @@ const AppContent: React.FC = () => {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { setQueue } = useQueue();
+  const { setQueue, queue, jumpTo } = useQueue();
 
   const handleSongSelect = (song: Song) => {
     setCurrentSong(song);
     setIsPlaying(true);
-    // Add the selected song to queue if it's not already there
-    setQueue([song], 0);
+    // Check if the song is already in the queue
+    const existingIndex = queue.findIndex(s => s.id === song.id);
+    if (existingIndex >= 0) {
+      // If song is already in queue, jump to it
+      jumpTo(existingIndex);
+    } else {
+      // Add the selected song to queue if it's not already there
+      setQueue([song], 0);
+    }
   };
 
   return (
