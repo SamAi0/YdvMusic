@@ -4,7 +4,7 @@ import { persistToS3 } from '../config/storage.js';
 // Get all songs with pagination and search
 export const getSongs = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, genre, artist_id } = req.query;
+    const { page = 1, limit = 20, search, genre, artist_id, mood, tempo, album_id } = req.query;
     const offset = (page - 1) * limit;
 
     let query = supabase
@@ -23,6 +23,31 @@ export const getSongs = async (req, res) => {
 
     if (genre) {
       query = query.eq('genre', genre);
+    }
+    
+    // Additional filters
+    if (mood) {
+      // Map mood to genres (this would typically be more sophisticated in production)
+      const moodToGenreMap = {
+        'happy': ['Festive Songs', 'Item Songs'],
+        'sad': ['Sad / Heartbreak Songs'],
+        'energetic': ['Item Songs', 'Patriotic Songs'],
+        'calm': ['Devotional / Bhajans', 'Romantic Songs']
+      };
+      const genresForMood = moodToGenreMap[mood];
+      if (genresForMood && genresForMood.length > 0) {
+        query = query.in('genre', genresForMood);
+      }
+    }
+    
+    if (tempo) {
+      // In a real implementation, you would have tempo stored in your database
+      // For now, we'll just log that tempo filter was requested
+      console.log('Tempo filter requested:', tempo);
+    }
+    
+    if (album_id) {
+      query = query.eq('album_id', album_id);
     }
 
     if (artist_id) {

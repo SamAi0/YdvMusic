@@ -1,5 +1,5 @@
 /*
-  # Initial Database Schema for  ydvmusic
+  # Initial Database Schema for  PlayMusic
 
   1. New Tables
     - `profiles` - User profile information

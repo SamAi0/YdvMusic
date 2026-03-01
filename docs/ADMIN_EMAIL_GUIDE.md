@@ -1,8 +1,8 @@
-# Admin Email Management Guide for YdvMusic
+# Admin Email Management Guide for PlayMusic
 
 ## 📧 **Overview**
 
-The YdvMusic application supports multiple methods for configuring admin email access, providing flexibility for different deployment scenarios and security requirements.
+The PlayMusic application supports multiple methods for configuring admin email access, providing flexibility for different deployment scenarios and security requirements.
 
 ## 🔧 **Configuration Methods**
 
@@ -13,7 +13,7 @@ Add the following configuration to your `.env` file:
 ```env
 # Admin Configuration
 # Comma-separated list of admin email addresses
-VITE_ADMIN_EMAILS=admin@ydvmusic.com,admin@example.com,superadmin@ydvmusic.com,your-email@domain.com
+VITE_ADMIN_EMAILS=admin@PlayMusic.com,admin@example.com,superadmin@PlayMusic.com,your-email@domain.com
 
 # Admin Settings
 VITE_ADMIN_REQUIRE_EXACT_MATCH=false
@@ -35,7 +35,7 @@ VITE_ADMIN_FALLBACK_KEYWORD=admin
 
 ### **VITE_ADMIN_EMAILS**
 - **Type**: Comma-separated string
-- **Example**: `admin@ydvmusic.com,superadmin@example.com`
+- **Example**: `admin@PlayMusic.com,superadmin@example.com`
 - **Description**: List of email addresses that should have admin access
 
 ### **VITE_ADMIN_REQUIRE_EXACT_MATCH**
@@ -91,7 +91,7 @@ graph TB
 ### **Option 3: Quick Demo Access**
 
 For testing purposes, use the demo admin account:
-- **Email**: `admin@ydvmusic.com`
+- **Email**: `admin@PlayMusic.com`
 - **Password**: `admin123`
 
 ## 🧪 **Testing Admin Access**
@@ -220,7 +220,7 @@ VITE_ADMIN_FALLBACK_KEYWORD=admin
 1. **Clear browser cache**: Force refresh the application
 2. **Check console**: Look for JavaScript errors
 3. **Verify admin status**: Use the email tester tool
-4. **Try demo account**: Use `admin@ydvmusic.com` for testing
+4. **Try demo account**: Use `admin@PlayMusic.com` for testing
 
 ## 📞 **Support**
 

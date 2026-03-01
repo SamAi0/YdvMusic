@@ -37,6 +37,9 @@ interface AuthContextType {
   isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -107,6 +110,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Signed in successfully!');
   };
 
+  const signInWithGoogle = async () => {
+    // Check if Google OAuth is configured
+    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+      toast.error('Google login is not configured');
+      return;
+    }
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/oauth/google`;
+  };
+
+  const signInWithFacebook = async () => {
+    // Check if Facebook OAuth is configured
+    if (!import.meta.env.VITE_FACEBOOK_APP_ID) {
+      toast.error('Facebook login is not configured');
+      return;
+    }
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/oauth/facebook`;
+  };
+
+  const signInWithApple = async () => {
+    // Check if Apple OAuth is configured
+    if (!import.meta.env.VITE_APPLE_CLIENT_ID) {
+      toast.error('Apple login is not configured');
+      return;
+    }
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/oauth/apple`;
+  };
+
   const signOut = async () => {
     removeUser();
     setUser(null);
@@ -115,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signInWithGoogle, signInWithFacebook, signInWithApple, signOut }}>
       {children}
     </AuthContext.Provider>
   );

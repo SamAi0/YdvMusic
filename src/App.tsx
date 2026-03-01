@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -6,7 +6,9 @@ import { QueueProvider, useQueue } from './contexts/QueueContext';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import Player from './components/Player';
+import BackgroundSelector from './components/BackgroundSelector';
 import { Song } from './hooks/useAPI';
+import { BackgroundProvider, useBackground } from './contexts/BackgroundContext';
 
 // Inner component that has access to QueueContext
 const AppContent: React.FC = () => {
@@ -14,7 +16,9 @@ const AppContent: React.FC = () => {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showBgSelector, setShowBgSelector] = useState(false);
   const { setQueue, queue, jumpTo } = useQueue();
+  const { getBgStyle } = useBackground();
 
   const handleSongSelect = (song: Song) => {
     setCurrentSong(song);
@@ -31,10 +35,21 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-black dark:bg-gray-900 transition-colors duration-300">
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar currentView={currentView} setCurrentView={setCurrentView} />
-        <MainContent 
+    <div
+      className="h-screen flex flex-col transition-all duration-700 ease-in-out relative overflow-hidden"
+      style={getBgStyle()}
+    >
+      {/* Dark overlay for custom images to ensure readability */}
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+      <div className="flex flex-1 overflow-hidden relative z-10">
+        {/* Mobile sidebar will appear as overlay, desktop sidebar as aside */}
+        <Sidebar
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          onOpenBgSelector={() => setShowBgSelector(true)}
+        />
+        <MainContent
           currentView={currentView}
           onSongSelect={handleSongSelect}
           searchQuery={searchQuery}
@@ -42,7 +57,7 @@ const AppContent: React.FC = () => {
           setCurrentView={setCurrentView}
         />
       </div>
-      <Player 
+      <Player
         currentSong={currentSong}
         isPlaying={isPlaying}
         setIsPlaying={setIsPlaying}
@@ -53,11 +68,25 @@ const AppContent: React.FC = () => {
         toastOptions={{
           duration: 3000,
           style: {
-            background: '#1f2937',
+            background: 'rgba(17, 24, 39, 0.95)',
             color: '#fff',
-            border: '1px solid #374151',
+            border: '1px solid rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          success: {
+            iconTheme: { primary: '#22c55e', secondary: '#fff' },
+          },
+          error: {
+            iconTheme: { primary: '#ef4444', secondary: '#fff' },
           },
         }}
+      />
+      <BackgroundSelector
+        isOpen={showBgSelector}
+        onClose={() => setShowBgSelector(false)}
       />
     </div>
   );
@@ -68,7 +97,9 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <QueueProvider>
-          <AppContent />
+          <BackgroundProvider>
+            <AppContent />
+          </BackgroundProvider>
         </QueueProvider>
       </AuthProvider>
     </ThemeProvider>

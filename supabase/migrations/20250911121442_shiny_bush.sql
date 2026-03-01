@@ -1,5 +1,5 @@
 /*
-  # Seed Sample Data for ydvmusic
+  # Seed Sample Data for PlayMusic
 
   1. Sample Data
     - Insert sample artists

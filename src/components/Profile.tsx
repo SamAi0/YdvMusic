@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Camera, Edit3, Settings, BarChart3, Calendar, Clock, Trophy, Music, Heart, Play, Globe, Lock, Save, X } from 'lucide-react';
+import { User, Camera, Edit3, Settings, BarChart3, Calendar, Clock, Trophy, Music, Heart, Play, Globe, Lock, Save, X , Baby, Sparkles, Wand2, Star, Check} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   LocalUser, 
@@ -14,6 +14,21 @@ import {
 } from '../utils/localData';
 import toast from 'react-hot-toast';
 
+
+// Mock Kids Data
+const AVATAR_BGs = ['bg-blue-400', 'bg-pink-400', 'bg-green-400', 'bg-purple-400', 'bg-yellow-400'];
+const AVATAR_FACES = ['??', '??', '??', '??', '??', '??'];
+const AVATAR_HATS = ['', '??', '??', '??', '??', '??'];
+
+const STICKERS = [
+  { id: 1, name: 'First Song!', icon: '??', condition: 1, color: 'from-pink-400 to-rose-400' },
+  { id: 2, name: 'Music Explorer', icon: '??', condition: 5, color: 'from-blue-400 to-cyan-400' },
+  { id: 3, name: 'Super Listener', icon: '?', condition: 20, color: 'from-yellow-400 to-orange-400' },
+  { id: 4, name: 'Dance Master', icon: '??', condition: 50, color: 'from-green-400 to-emerald-400' },
+  { id: 5, name: 'Lullaby Pro', icon: '??', condition: 100, color: 'from-indigo-400 to-purple-400' },
+  { id: 6, name: 'Animal Friend', icon: '??', condition: 200, color: 'from-green-500 to-teal-500' },
+];
+
 interface ProfileProps {
   onClose: () => void;
 }
@@ -24,6 +39,7 @@ const Profile: React.FC<ProfileProps> = ({ onClose }) => {
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [avatarState, setAvatarState] = useState({ bg: 'bg-blue-400', face: '??', hat: '' });
   const [editForm, setEditForm] = useState<Partial<LocalUser>>({});
 
   useEffect(() => {
@@ -115,7 +131,8 @@ const Profile: React.FC<ProfileProps> = ({ onClose }) => {
             { id: 'overview', label: 'Overview', icon: User },
             { id: 'stats', label: 'Statistics', icon: BarChart3 },
             { id: 'settings', label: 'Settings', icon: Settings },
-            { id: 'edit', label: 'Edit Profile', icon: Edit3 }
+            { id: 'edit', label: 'Edit Profile', icon: Edit3 },
+            { id: 'kids', label: 'Kids Zone', icon: Baby }
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}

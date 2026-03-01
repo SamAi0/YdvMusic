@@ -1,9 +1,9 @@
 import { Song, Playlist } from '../hooks/useAPI';
 
 // Local storage keys
-const PLAYLISTS_KEY = 'ydvmusic_playlists';
-const LIKED_SONGS_KEY = 'ydvmusic_liked_songs';
-const USER_KEY = 'ydvmusic_user';
+const PLAYLISTS_KEY = 'PlayMusic_playlists';
+const LIKED_SONGS_KEY = 'PlayMusic_liked_songs';
+const USER_KEY = 'PlayMusic_user';
 
 // Real songs from public/audio directory
 export const availableSongs: Song[] = [
@@ -386,14 +386,14 @@ export const getPlaylists = (userId: string): Playlist[] => {
 export const savePlaylist = (playlist: Playlist): void => {
   const playlistsData = localStorage.getItem(PLAYLISTS_KEY);
   const allPlaylists: Playlist[] = playlistsData ? JSON.parse(playlistsData) : [];
-  
+
   const existingIndex = allPlaylists.findIndex(p => p.id === playlist.id);
   if (existingIndex >= 0) {
     allPlaylists[existingIndex] = playlist;
   } else {
     allPlaylists.push(playlist);
   }
-  
+
   localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(allPlaylists));
 };
 
@@ -413,12 +413,12 @@ export const getPlaylistById = (playlistId: string): Playlist | null => {
 export const addSongToPlaylist = (playlistId: string, songId: string): void => {
   const playlist = getPlaylistById(playlistId);
   if (!playlist) return;
-  
+
   const song = availableSongs.find(s => s.id === songId);
   if (!song) return;
-  
+
   if (!playlist.songs) playlist.songs = [];
-  
+
   // Check if song is already in playlist
   if (!playlist.songs.find(s => s.id === songId)) {
     playlist.songs.push(song);
@@ -430,7 +430,7 @@ export const addSongToPlaylist = (playlistId: string, songId: string): void => {
 export const removeSongFromPlaylist = (playlistId: string, songId: string): void => {
   const playlist = getPlaylistById(playlistId);
   if (!playlist || !playlist.songs) return;
-  
+
   playlist.songs = playlist.songs.filter(s => s.id !== songId);
   playlist.updated_at = new Date().toISOString();
   savePlaylist(playlist);
@@ -446,16 +446,16 @@ export const getLikedSongs = (userId: string): string[] => {
 export const toggleLikedSong = (userId: string, songId: string): boolean => {
   const likedData = localStorage.getItem(LIKED_SONGS_KEY);
   const allLiked: { [userId: string]: string[] } = likedData ? JSON.parse(likedData) : {};
-  
+
   if (!allLiked[userId]) allLiked[userId] = [];
-  
+
   const isLiked = allLiked[userId].includes(songId);
   if (isLiked) {
     allLiked[userId] = allLiked[userId].filter(id => id !== songId);
   } else {
     allLiked[userId].push(songId);
   }
-  
+
   localStorage.setItem(LIKED_SONGS_KEY, JSON.stringify(allLiked));
   return !isLiked;
 };
@@ -466,8 +466,8 @@ export const generateId = (): string => {
 };
 
 // Profile management
-const PROFILE_STATS_KEY = 'ydvmusic_profile_stats';
-const USER_PREFERENCES_KEY = 'ydvmusic_user_preferences';
+const PROFILE_STATS_KEY = 'PlayMusic_profile_stats';
+const USER_PREFERENCES_KEY = 'PlayMusic_user_preferences';
 
 export interface ProfileStats {
   totalSongsPlayed: number;
@@ -517,7 +517,7 @@ export const getProfileStats = (userId: string): ProfileStats => {
   const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   let thisMonthSongs = 0;
   let thisMonthTime = 0;
-  
+
   Object.entries(baseStats.dailyListening).forEach(([date, time]) => {
     if (date.startsWith(currentMonth)) {
       thisMonthSongs += 1;
@@ -566,52 +566,52 @@ export const saveUserPreferences = (userId: string, preferences: UserPreferences
 export const updateListeningStats = (userId: string, songId: string, artistName: string, genre: string, duration: number): void => {
   const stats = getProfileStats(userId);
   const today = new Date().toISOString().split('T')[0];
-  
+
   // Update basic stats
   stats.totalSongsPlayed += 1;
   stats.totalListeningTime += duration;
-  
+
   // Update favorite artists
   const artistKey = artistName || 'Unknown Artist';
   stats.favoriteArtists[artistKey] = (stats.favoriteArtists[artistKey] || 0) + 1;
-  
+
   // Update favorite genres
   if (genre) {
     stats.favoriteGenres[genre] = (stats.favoriteGenres[genre] || 0) + 1;
   }
-  
+
   // Update daily listening
   stats.dailyListening[today] = (stats.dailyListening[today] || 0) + duration;
-  
+
   // Update streak
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().split('T')[0];
-  
+
   if (stats.lastActiveDate === yesterdayStr) {
     stats.streakDays += 1;
   } else if (stats.lastActiveDate !== today) {
     stats.streakDays = 1;
   }
-  
+
   stats.lastActiveDate = today;
-  
+
   saveProfileStats(userId, stats);
 };
 
 // Get user's top items
-export const getTopArtists = (userId: string, limit: number = 5): Array<{name: string; playCount: number}> => {
+export const getTopArtists = (userId: string, limit: number = 5): Array<{ name: string; playCount: number }> => {
   const stats = getProfileStats(userId);
   return Object.entries(stats.favoriteArtists)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, limit)
     .map(([name, playCount]) => ({ name, playCount }));
 };
 
-export const getTopGenres = (userId: string, limit: number = 5): Array<{name: string; playCount: number}> => {
+export const getTopGenres = (userId: string, limit: number = 5): Array<{ name: string; playCount: number }> => {
   const stats = getProfileStats(userId);
   return Object.entries(stats.favoriteGenres)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, limit)
     .map(([name, playCount]) => ({ name, playCount }));
 };

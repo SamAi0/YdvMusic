@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, Heart, HeartOff, List } from 'lucide-react';
+import {
+  Play, Pause, SkipBack, SkipForward, Shuffle, Repeat,
+  Volume2, VolumeX, Heart, HeartOff, List, ChevronUp, Music2,
+  Moon, Timer, X
+} from 'lucide-react';
 import { Song } from '../hooks/useAPI';
 import { useAPI } from '../hooks/useAPI';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,517 +18,545 @@ interface PlayerProps {
   onSongSelect: (song: Song) => void;
 }
 
-const Player: React.FC<PlayerProps> = ({ 
-  currentSong, 
-  isPlaying, 
-  setIsPlaying,
-  onSongSelect
-}) => {
+const Player: React.FC<PlayerProps> = ({ currentSong, isPlaying, setIsPlaying, onSongSelect }) => {
   const { user } = useAuth();
   const { likedSongs, toggleLikeSong } = useAPI();
-  const {
-    queue,
-    currentIndex,
-    shuffle,
-    repeat,
-    smartShuffle,
-    next,
-    previous,
-    setShuffle,
-    setRepeat,
-    setSmartShuffle
-  } = useQueue();
-  
+  const { queue, currentIndex, shuffle, repeat, smartShuffle, next, previous, setShuffle, setRepeat, setSmartShuffle } = useQueue();
+
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(80);
+  const [isMuted, setIsMuted] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false);
+  const [showFullPlayer, setShowFullPlayer] = useState(false);
+  const [showTimerMenu, setShowTimerMenu] = useState(false);
+  const [sleepTimer, setSleepTimer] = useState<number | null>(null); // in minutes
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number | null>(null); // in seconds
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
+  const progressRef = useRef<HTMLDivElement>(null);
   const isPremium = user?.isAdmin || false;
 
-  // Enhanced Play/Pause functionality
   const handlePlayPause = () => {
     if (!currentSong) return;
-    
     if (isPlaying) {
       setIsPlaying(false);
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      audioRef.current?.pause();
     } else {
       setIsPlaying(true);
-      if (audioRef.current) {
-        audioRef.current.play().catch(console.error);
-      }
+      audioRef.current?.play().catch(console.error);
     }
   };
 
-  // Enhanced Skip functionality with queue awareness
   const handleNext = () => {
-    if (queue.length === 0) {
-      toast('No songs in queue');
-      return;
-    }
-    
-    // Handle repeat modes
+    if (queue.length === 0) { toast('No songs in queue'); return; }
     if (repeat === 'one') {
-      // Restart current song
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        if (isPlaying) {
-          audioRef.current.play().catch(console.error);
-        }
-      }
+      if (audioRef.current) { audioRef.current.currentTime = 0; if (isPlaying) audioRef.current.play().catch(console.error); }
       return;
     }
-    
-    // Check if we're at the end of the queue and repeat is off
     if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') {
-      toast.success('End of queue reached');
-      return;
+      setIsPlaying(false); return;
     }
-    
     next();
-    toast.success('Next track');
   };
 
   const handlePrevious = () => {
-    if (queue.length === 0) {
-      toast('No songs in queue');
-      return;
-    }
-    
-    // If more than 3 seconds into the song, restart it
+    if (queue.length === 0) { toast('No songs in queue'); return; }
     if (currentTime > 3) {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        setCurrentTime(0);
-      }
+      if (audioRef.current) { audioRef.current.currentTime = 0; setCurrentTime(0); }
       return;
     }
-    
     previous();
-    toast.success('Previous track');
   };
 
-  // Enhanced Shuffle functionality
   const handleShuffleToggle = () => {
     if (isPremium && shuffle) {
-      // Toggle Smart Shuffle for premium users
       setSmartShuffle(!smartShuffle);
-      toast.success(smartShuffle ? 'Smart Shuffle disabled' : 'Smart Shuffle enabled');
+      toast.success(smartShuffle ? 'Smart Shuffle off' : 'Smart Shuffle on');
     } else {
-      // Toggle regular shuffle
       setShuffle(!shuffle);
-      toast.success(shuffle ? 'Shuffle disabled' : 'Shuffle enabled');
+      toast.success(shuffle ? 'Shuffle off' : 'Shuffle on');
     }
   };
 
-  // Enhanced Repeat functionality
   const handleRepeatClick = () => {
     const modes: ('off' | 'all' | 'one')[] = ['off', 'all', 'one'];
-    const currentModeIndex = modes.indexOf(repeat);
-    const nextMode = modes[(currentModeIndex + 1) % modes.length];
-    setRepeat(nextMode);
-    
-    const modeLabels = {
-      'off': 'Repeat disabled',
-      'all': 'Repeat all songs',
-      'one': 'Repeat current song'
-    };
-    
-    toast.success(modeLabels[nextMode]);
+    const next = modes[(modes.indexOf(repeat) + 1) % modes.length];
+    setRepeat(next);
+    const labels = { off: 'Repeat off', all: 'Repeat all', one: 'Repeat one' };
+    toast.success(labels[next]);
   };
 
-  const getShuffleButtonColor = () => {
-    if (smartShuffle && isPremium) return 'text-purple-500';
-    if (shuffle) return 'text-green-500';
-    return 'text-gray-400 hover:text-white';
-  };
-
-  const getShuffleButtonTitle = () => {
-    if (smartShuffle && isPremium) return 'Smart Shuffle';
-    if (shuffle) return 'Shuffle On';
-    return 'Shuffle Off';
-  };
-
-  const getRepeatButtonColor = () => {
-    switch (repeat) {
-      case 'all':
-        return 'text-green-500';
-      case 'one':
-        return 'text-blue-500';
-      default:
-        return 'text-gray-400 hover:text-white';
+  const handleVolumeToggle = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      if (audioRef.current) audioRef.current.volume = volume / 100;
+    } else {
+      setIsMuted(true);
+      if (audioRef.current) audioRef.current.volume = 0;
     }
   };
 
-  const getRepeatButtonTitle = () => {
-    switch (repeat) {
-      case 'off':
-        return 'Enable repeat';
-      case 'all':
-        return 'Repeat all songs';
-      case 'one':
-        return 'Repeat current song';
-      default:
-        return 'Repeat';
-    }
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Number(e.target.value);
+    setVolume(v);
+    setIsMuted(v === 0);
+    if (audioRef.current) audioRef.current.volume = v / 100;
   };
 
-  // Update current song when queue or currentIndex changes
+  // Progress bar click
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || duration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audioRef.current.currentTime = pct * duration;
+    setCurrentTime(pct * duration);
+  };
+
+  const formatTime = (t: number) => {
+    if (isNaN(t) || !isFinite(t)) return '0:00';
+    return `${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, '0')}`;
+  };
+
+  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const isLiked = currentSong ? likedSongs.includes(currentSong.id) : false;
+
+  // Sync audio volume with state
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume / 100;
+  }, [volume, isMuted]);
+
+  // Play/pause on isPlaying change
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) audioRef.current.play().catch(console.error);
+      else audioRef.current.pause();
+    }
+  }, [isPlaying]);
+
+  // Queue change: update to new song
   useEffect(() => {
     if (queue.length > 0 && queue[currentIndex] && queue[currentIndex] !== currentSong) {
       onSongSelect(queue[currentIndex]);
     }
-  }, [queue, currentIndex, onSongSelect, currentSong]);
+  }, [queue, currentIndex]);
 
-  // Enhanced auto-play functionality
-  useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play().catch(console.error);
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying]);
-
-  // Keyboard controls for basic playback
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Prevent if user is typing in an input field
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-      
-      switch (e.code) {
-        case 'Space':
-          e.preventDefault();
-          handlePlayPause();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          handleNext();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          handlePrevious();
-          break;
-        case 'KeyS':
-          e.preventDefault();
-          handleShuffleToggle();
-          break;
-        case 'KeyR':
-          e.preventDefault();
-          handleRepeatClick();
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, []);
-
-  // Auto-play next song when current ends
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      const handleEnded = () => {
-        if (repeat === 'one') {
-          audio.currentTime = 0;
-          audio.play().catch(console.error);
-        } else {
-          // Check if we're at the end of the queue and repeat is off
-          if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') {
-            toast.success('End of queue reached');
-            setIsPlaying(false);
-          } else {
-            handleNext();
-          }
-        }
-      };
-      
-      audio.addEventListener('ended', handleEnded);
-      return () => audio.removeEventListener('ended', handleEnded);
-    }
-  }, [repeat, handleNext, shuffle, currentIndex, queue.length, setIsPlaying]);
-
+  // Song change: load & play
   useEffect(() => {
     if (currentSong && audioRef.current) {
-      console.log('Loading song:', currentSong.title, 'Audio URL:', currentSong.audio_url);
       audioRef.current.currentTime = 0;
-      
-      const handleError = (e: Event) => {
-        console.error('Audio load error for song:', currentSong.title, e);
-        console.error('Audio URL that failed:', currentSong.audio_url);
-      };
-      
-      const handleCanPlay = () => {
-        console.log('Audio can play:', currentSong.title);
-      };
-      
-      audioRef.current.addEventListener('error', handleError);
-      audioRef.current.addEventListener('canplay', handleCanPlay);
-      
-      if (isPlaying) {
-        audioRef.current.play().catch((error) => {
-          console.error('Play error for song:', currentSong.title, error);
-        });
-      }
-      
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.removeEventListener('error', handleError);
-          audioRef.current.removeEventListener('canplay', handleCanPlay);
-        }
-      };
+      if (isPlaying) audioRef.current.play().catch(console.error);
     }
   }, [currentSong]);
 
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
+  // Sleep Timer logic
+  useEffect(() => {
+    if (sleepTimerRemaining === null || !isPlaying) return;
+    
+    if (sleepTimerRemaining <= 0) {
+        setIsPlaying(false);
+        setSleepTimer(null);
+        setSleepTimerRemaining(null);
+        if (audioRef.current) audioRef.current.pause();
+        toast('?? Sleep timer completed. Music paused.', { icon: '??' });
+        return;
     }
-  };
 
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
+    const interval = setInterval(() => {
+        setSleepTimerRemaining(prev => prev !== null ? prev - 1 : null);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sleepTimerRemaining, isPlaying]);
+
+  const handleSetTimer = (minutes: number) => {
+    if (minutes === 0) {
+        setSleepTimer(null);
+        setSleepTimerRemaining(null);
+        toast('Sleep timer cancelled');
+    } else {
+        setSleepTimer(minutes);
+        setSleepTimerRemaining(minutes * 60);
+        toast.success(`Sleep timer set for ${minutes} minutes ??`);
     }
+    setShowTimerMenu(false);
   };
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (audioRef.current && duration > 0) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      const newTime = percent * duration;
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
+  const formatTimerRemaining = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleVolumeChange = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    const newVolume = Math.max(0, Math.min(100, percent * 100));
-    setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume / 100;
-    }
-  };
+  // Keyboard controls
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.code === 'Space') { e.preventDefault(); handlePlayPause(); }
+      if (e.code === 'ArrowRight') { e.preventDefault(); handleNext(); }
+      if (e.code === 'ArrowLeft') { e.preventDefault(); handlePrevious(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
-  const formatTime = (time: number) => {
-    if (isNaN(time)) return '0:00';
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const isLiked = currentSong ? likedSongs.includes(currentSong.id) : false;
-
-  const handleLikeToggle = async () => {
-    if (!currentSong || !user) return;
-    try {
-      await toggleLikeSong(currentSong.id);
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
-  };
+  const shuffleColor = smartShuffle && isPremium ? 'text-purple-400' : shuffle ? 'text-green-400' : 'text-gray-500 hover:text-white';
+  const repeatColor = repeat === 'all' ? 'text-green-400' : repeat === 'one' ? 'text-blue-400' : 'text-gray-500 hover:text-white';
 
   if (!currentSong) {
     return (
-      <div className="bg-gray-900 dark:bg-gray-900 border-t border-gray-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex-1"></div>
-        <div className="flex items-center space-x-4">
-          <button className="text-gray-500">
-            <SkipBack className="w-5 h-5" />
-          </button>
-          <button className="text-gray-500">
-            <Play className="w-8 h-8" />
-          </button>
-          <button className="text-gray-500">
-            <SkipForward className="w-5 h-5" />
-          </button>
+      <div className="h-20 bg-black/80 border-t border-white/5 flex items-center justify-center glass-dark">
+        <div className="flex items-center space-x-8 text-gray-600">
+          <SkipBack className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-full border-2 border-gray-700 flex items-center justify-center">
+            <Play className="w-4 h-4 ml-0.5" />
+          </div>
+          <SkipForward className="w-5 h-5" />
         </div>
-        <div className="flex-1"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 dark:bg-gray-900 border-t border-gray-800 px-4 py-3">
-      {/* Hidden audio element */}
-      <audio
-        ref={audioRef}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onError={(e) => {
-          console.error('Audio element error:', e);
-          console.error('Failed to load:', currentSong.audio_url);
-        }}
-        onLoadStart={() => {
-          console.log('Started loading:', currentSong.title);
-        }}
-        onCanPlay={() => {
-          console.log('Can play:', currentSong.title);
-        }}
-        onEnded={() => {
-          if (repeat === 'one') {
-            audioRef.current?.play();
-          } else {
-            // Check if we're at the end of the queue and repeat is off
-            if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') {
-              toast.success('End of queue reached');
-              setIsPlaying(false);
-            } else {
-              handleNext();
-            }
-          }
-        }}
-        src={currentSong.audio_url || undefined}
-        preload="metadata"
-      />
+    <>
+      {/* Full player overlay */}
+      {showFullPlayer && (
+        <div
+          className="fixed inset-0 z-40 flex flex-col items-center justify-center animate-fade-in"
+          style={{
+            background: `linear-gradient(135deg, #0a0a0a 0%, #111827 50%, #0a1a0a 100%)`,
+          }}
+        >
+          <button
+            onClick={() => setShowFullPlayer(false)}
+            className="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/10"
+          >
+            <ChevronUp className="w-6 h-6" />
+          </button>
 
-      <div className="flex items-center justify-between">
-        {/* Track Info */}
-        <div className="flex items-center flex-1 min-w-0">
-          <img
-            src={currentSong.album?.cover_url || 'https://images.pexels.com/photos/167635/pexels-photo-167635.jpeg?auto=compress&cs=tinysrgb&w=300'}
-            alt={`${currentSong.title} cover`}
-            className="w-14 h-14 rounded-md mr-4"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-white text-sm font-medium truncate">{currentSong.title}</p>
-            <p className="text-gray-400 text-xs truncate">{currentSong.artist?.name}</p>
-          </div>
-          {user && (
-            <button
-              onClick={handleLikeToggle}
-              className="text-gray-400 hover:text-green-500 transition-colors ml-4"
-            >
-              {isLiked ? (
-                <Heart className="w-4 h-4 fill-current text-green-500" />
-              ) : (
-                <HeartOff className="w-4 h-4" />
+          <div className="flex flex-col items-center w-full max-w-sm px-8">
+            {/* Album Art */}
+            <div className="relative mb-8 animate-scale-in">
+              <div className="w-64 h-64 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/10" style={{ boxShadow: '0 32px 64px rgba(0,0,0,0.5)' }}>
+                <img
+                  src={currentSong.album?.cover_url || 'https://images.pexels.com/photos/167635/pexels-photo-167635.jpeg?auto=compress&cs=tinysrgb&w=600'}
+                  alt={currentSong.title}
+                  className={`w-full h-full object-cover transition-transform duration-500 ${isPlaying ? 'scale-105' : 'scale-100'}`}
+                />
+              </div>
+              {isPlaying && (
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end space-x-0.5 h-5">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="wave-bar" style={{ height: `${10 + (i % 3) * 5}px` }} />
+                  ))}
+                </div>
               )}
-            </button>
-          )}
+            </div>
+
+            {/* Song info */}
+            <div className="text-center mb-6 w-full">
+              <h2 className="text-2xl font-bold text-white mb-1 truncate">{currentSong.title}</h2>
+              <p className="text-gray-400">{currentSong.artist?.name}</p>
+            </div>
+
+            {/* Like */}
+            {user && (
+              <div className="mb-4">
+                <button
+                  onClick={() => toggleLikeSong(currentSong.id)}
+                  className="transition-all hover:scale-110"
+                >
+                  {isLiked
+                    ? <Heart className="w-6 h-6 fill-current text-green-400" />
+                    : <HeartOff className="w-6 h-6 text-gray-500 hover:text-white" />}
+                </button>
+              </div>
+            )}
+
+            {/* Progress */}
+            <div className="w-full mb-4">
+              <div
+                className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer group"
+                onClick={handleProgressClick}
+              >
+                <div
+                  className="h-full bg-green-400 rounded-full relative transition-all"
+                  style={{ width: `${progressPct}%` }}
+                >
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center space-x-6 mb-6">
+              <button onClick={handleShuffleToggle} className={`transition-colors ${shuffleColor}`}>
+                <Shuffle className="w-5 h-5" />
+              </button>
+              {/* Timer Full Player logic */}
+              <div className="relative">
+                  <button 
+                    onClick={() => setShowTimerMenu(!showTimerMenu)} 
+                    className={`transition-colors relative p-2 ${sleepTimer !== null ? 'text-indigo-400' : 'text-gray-500 hover:text-white'}`} 
+                    title="Sleep Timer"
+                  >
+                    <Moon className="w-5 h-5" />
+                    {sleepTimer !== null && sleepTimerRemaining !== null && (
+                        <span className="absolute -top-3 -right-3 bg-indigo-500/20 text-indigo-300 text-[10px] px-1 rounded font-bold whitespace-nowrap">
+                            {formatTimerRemaining(sleepTimerRemaining)}
+                        </span>
+                    )}
+                  </button>
+                  {showTimerMenu && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowTimerMenu(false)} />
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#1a1a1a] rounded-xl shadow-2xl z-50 py-2 w-48 border border-white/10 animate-fade-in">
+                            <div className="px-3 pb-2 mb-2 border-b border-white/5 text-white text-sm font-bold flex items-center gap-2">
+                                <Timer className="w-4 h-4 text-indigo-400"/> Sleep Timer
+                            </div>
+                            <button onClick={() => handleSetTimer(0)} className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/10">Off</button>
+                            <button onClick={() => handleSetTimer(1)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10">1 Minute (Demo)</button>
+                            <button onClick={() => handleSetTimer(15)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10">15 Minutes</button>
+                            <button onClick={() => handleSetTimer(30)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10">30 Minutes</button>
+                            <button onClick={() => handleSetTimer(60)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10">1 Hour</button>
+                        </div>
+                    </>
+                  )}
+              </div>
+
+              <button onClick={handlePrevious} className="text-gray-300 hover:text-white transition-colors">
+                <SkipBack className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handlePlayPause}
+                className="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-xl glow-green"
+              >
+                {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+              </button>
+              <button onClick={handleNext} className="text-gray-300 hover:text-white transition-colors">
+                <SkipForward className="w-6 h-6" />
+              </button>
+              <button onClick={handleRepeatClick} className={`transition-colors relative ${repeatColor}`}>
+                <Repeat className="w-5 h-5" />
+                {repeat === 'one' && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold text-blue-400">1</span>}
+              </button>
+            </div>
+
+            {/* Volume */}
+            <div className="flex items-center w-full space-x-3">
+              <button onClick={handleVolumeToggle} className="text-gray-500 hover:text-white transition-colors flex-shrink-0">
+                {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <input
+                type="range"
+                min={0} max={100} value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="flex-1 h-1 accent-green-400"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mini Player Bar */}
+      <div className="relative glass-dark border-t border-white/5 px-4 py-2 z-30">
+        <audio
+          ref={audioRef}
+          src={currentSong.audio_url || undefined}
+          preload="metadata"
+          onTimeUpdate={() => { if (audioRef.current && !isDraggingProgress) setCurrentTime(audioRef.current.currentTime); }}
+          onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
+          onEnded={() => {
+            if (repeat === 'one') { audioRef.current?.play(); }
+            else if (!shuffle && currentIndex === queue.length - 1 && repeat === 'off') { setIsPlaying(false); }
+            else { handleNext(); }
+          }}
+          onError={(e) => console.error('Audio error:', e)}
+        />
+
+        {/* Thin progress bar at top */}
+        <div
+          ref={progressRef}
+          className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer group"
+          onClick={handleProgressClick}
+        >
+          <div
+            className="h-full bg-green-400 transition-all duration-300"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
 
-        {/* Player Controls */}
-        <div className="flex flex-col items-center flex-1 max-w-md mx-8">
-          <div className="flex items-center space-x-4 mb-2">
-            {/* Shuffle Button */}
-            <button
-              onClick={handleShuffleToggle}
-              className={`transition-colors relative ${getShuffleButtonColor()}`}
-              title={getShuffleButtonTitle()}
-            >
-              <Shuffle className="w-4 h-4" />
-              {smartShuffle && isPremium && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full"></span>
+        <div className="flex items-center justify-between gap-2 mt-1">
+          {/* Track info */}
+          <div
+            className="flex items-center min-w-0 flex-1 cursor-pointer group"
+            onClick={() => setShowFullPlayer(true)}
+          >
+            <div className="relative flex-shrink-0 mr-3">
+              <img
+                src={currentSong.album?.cover_url || 'https://images.pexels.com/photos/167635/pexels-photo-167635.jpeg?auto=compress&cs=tinysrgb&w=200'}
+                alt={currentSong.title}
+                className="w-11 h-11 rounded-lg object-cover ring-1 ring-white/10 group-hover:ring-green-500/30 transition-all"
+              />
+              {isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-end space-x-0.5">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="wave-bar" style={{ height: `${8 + i * 3}px` }} />
+                    ))}
+                  </div>
+                </div>
               )}
-            </button>
-            
-            {/* Previous Button */}
-            <button
-              onClick={handlePrevious}
-              className="text-gray-400 hover:text-white transition-colors"
-              title="Previous (or restart if >3s)"
-            >
-              <SkipBack className="w-5 h-5" />
-            </button>
-            
-            {/* Play/Pause Button */}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate group-hover:text-green-400 transition-colors">{currentSong.title}</p>
+              <p className="text-gray-500 text-xs truncate">{currentSong.artist?.name}</p>
+            </div>
+            {user && (
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleLikeSong(currentSong.id); }}
+                className="ml-3 flex-shrink-0 text-gray-500 hover:text-green-400 transition-colors"
+              >
+                {isLiked ? <Heart className="w-4 h-4 fill-current text-green-400" /> : <HeartOff className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
+
+          {/* Center controls */}
+          <div className="flex flex-col items-center flex-shrink-0 max-w-md w-full mx-4 hidden md:flex">
+            <div className="flex items-center space-x-4 mb-1.5">
+              <button onClick={handleShuffleToggle} className={`transition-colors relative ${shuffleColor}`} title="Shuffle">
+                <Shuffle className="w-4 h-4" />
+                {smartShuffle && isPremium && <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-purple-500 rounded-full" />}
+              </button>
+              
+              <div className="relative">
+                  <button 
+                    onClick={() => setShowTimerMenu(!showTimerMenu)} 
+                    className={`transition-colors relative ${sleepTimer !== null ? 'text-indigo-400' : 'text-gray-500 hover:text-white'}`} 
+                    title="Sleep Timer"
+                  >
+                    <Moon className="w-4 h-4" />
+                    {sleepTimer !== null && sleepTimerRemaining !== null && (
+                        <span className="absolute -top-4 -right-4 bg-indigo-500/20 text-indigo-300 text-[9px] px-1 rounded font-bold whitespace-nowrap">
+                            {formatTimerRemaining(sleepTimerRemaining)}
+                        </span>
+                    )}
+                  </button>
+
+                  {/* Timer Dropdown Mini Player */}
+                  {showTimerMenu && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowTimerMenu(false)} />
+                        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 glass-dark rounded-xl shadow-2xl z-50 py-2 w-48 border border-white/10 animate-scale-in">
+                            <div className="px-3 pb-2 mb-2 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-white text-sm font-bold flex items-center gap-2"><Timer className="w-4 h-4 text-indigo-400"/> Sleep Timer</span>
+                            </div>
+                            <button onClick={() => handleSetTimer(0)} className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-colors">Off</button>
+                            <button onClick={() => handleSetTimer(1)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors flex justify-between"><span>1 Minute (Demo)</span></button>
+                            <button onClick={() => handleSetTimer(15)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors flex justify-between"><span>15 Minutes</span></button>
+                            <button onClick={() => handleSetTimer(30)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors flex justify-between"><span>30 Minutes</span></button>
+                            <button onClick={() => handleSetTimer(45)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors flex justify-between"><span>45 Minutes</span></button>
+                            <button onClick={() => handleSetTimer(60)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors flex justify-between"><span>1 Hour</span></button>
+                        </div>
+                    </>
+                  )}
+              </div>
+
+              <button onClick={handlePrevious} className="text-gray-400 hover:text-white transition-colors">
+                <SkipBack className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handlePlayPause}
+                className="w-9 h-9 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-md"
+              >
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+              </button>
+              <button onClick={handleNext} className="text-gray-400 hover:text-white transition-colors">
+                <SkipForward className="w-5 h-5" />
+              </button>
+              <button onClick={handleRepeatClick} className={`transition-colors relative ${repeatColor}`} title="Repeat">
+                <Repeat className="w-4 h-4" />
+                {repeat === 'one' && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold text-blue-400">1</span>}
+                {repeat === 'all' && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold text-green-400">∞</span>}
+              </button>
+            </div>
+            {/* Progress */}
+            <div className="flex items-center w-full space-x-2">
+              <span className="text-[11px] text-gray-500 w-8 text-right">{formatTime(currentTime)}</span>
+              <div
+                className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer group"
+                onClick={handleProgressClick}
+              >
+                <div
+                  className="h-full bg-white group-hover:bg-green-400 rounded-full transition-colors"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <span className="text-[11px] text-gray-500 w-8">{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Right controls */}
+          <div className="flex items-center space-x-3 flex-shrink-0">
+            {/* Mobile play */}
             <button
               onClick={handlePlayPause}
-              className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-transform"
-              title={isPlaying ? 'Pause' : 'Play'}
+              className="md:hidden w-9 h-9 bg-white text-black rounded-full flex items-center justify-center"
             >
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
             </button>
-            
-            {/* Next Button */}
-            <button
-              onClick={handleNext}
-              className="text-gray-400 hover:text-white transition-colors"
-              title="Next track"
-            >
-              <SkipForward className="w-5 h-5" />
-            </button>
-            
-            {/* Repeat Button */}
-            <button
-              onClick={handleRepeatClick}
-              className={`transition-colors relative ${getRepeatButtonColor()}`}
-              title={getRepeatButtonTitle()}
-            >
-              <Repeat className="w-4 h-4" />
-              {repeat === 'one' && (
-                <span className="absolute -top-1 -right-1 text-xs font-bold text-blue-400">1</span>
-              )}
-              {repeat === 'all' && (
-                <span className="absolute -top-1 -right-1 text-xs font-bold text-green-400">∞</span>
-              )}
-            </button>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="flex items-center w-full space-x-2">
-            <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
-            <div
-              className="flex-1 bg-gray-600 h-1 rounded-full cursor-pointer"
-              onClick={handleProgressClick}
-            >
-              <div
-                className="bg-white h-1 rounded-full transition-all duration-300"
-                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-              ></div>
-            </div>
-            <span className="text-xs text-gray-400">{formatTime(duration || (typeof currentSong.duration === 'number' ? currentSong.duration : 0))}</span>
-          </div>
-        </div>
 
-        {/* Volume Controls & Queue */}
-        <div className="flex items-center justify-end flex-1 space-x-4">
-          {/* Queue Button */}
-          <button
-            onClick={() => setShowQueue(true)}
-            className="text-gray-400 hover:text-white transition-colors relative"
-            title="Show Queue"
-          >
-            <List className="w-4 h-4" />
-            {queue.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                {queue.length}
-              </span>
-            )}
-          </button>
-          
-          {/* Volume Controls */}
-          <Volume2 className="w-4 h-4 text-gray-400" />
-          <div
-            className="w-20 bg-gray-600 h-1 rounded-full cursor-pointer"
-            onClick={handleVolumeChange}
-          >
-            <div
-              className="bg-white h-1 rounded-full transition-all duration-300"
-              style={{ width: `${volume}%` }}
-            ></div>
+            {/* Queue */}
+            <button
+              onClick={() => setShowQueue(true)}
+              className="hidden md:flex text-gray-500 hover:text-white transition-colors relative"
+              title="Queue"
+            >
+              <List className="w-4 h-4" />
+              {queue.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
+                  {queue.length > 9 ? '9+' : queue.length}
+                </span>
+              )}
+            </button>
+
+            {/* Volume */}
+            <div className="hidden md:flex items-center space-x-1.5">
+              <button onClick={handleVolumeToggle} className="text-gray-500 hover:text-white transition-colors">
+                {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <input
+                type="range" min={0} max={100} value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="w-20 h-1 accent-green-400 cursor-pointer"
+              />
+            </div>
+
+            {/* Expand */}
+            <button
+              onClick={() => setShowFullPlayer(true)}
+              className="text-gray-500 hover:text-white transition-colors"
+              title="Full Player"
+            >
+              <Music2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
-      
-      {/* Queue Modal */}
+
       <Queue
         isOpen={showQueue}
         onClose={() => setShowQueue(false)}
         currentSong={currentSong}
         onSongSelect={onSongSelect}
       />
-    </div>
+    </>
   );
 };
 

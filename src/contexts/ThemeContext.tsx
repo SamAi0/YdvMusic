@@ -19,20 +19,20 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('ydvmusic-theme') as Theme;
+    const savedTheme = localStorage.getItem('PlayMusic-theme') as Theme;
     return savedTheme || 'dark';
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
-    
-    localStorage.setItem('ydvmusic-theme', theme);
+
+    localStorage.setItem('PlayMusic-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {

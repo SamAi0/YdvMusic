@@ -53,11 +53,29 @@ export const useAPI = () => {
   const [loading, setLoading] = useState(false);
 
   // Fetch songs with search
-  const fetchSongs = async (searchQuery?: string) => {
+  const fetchSongs = async (params?: string | { search?: string; genre?: string; mood?: string; tempo?: string; album_id?: string }) => {
     setLoading(true);
     try {
       let filteredSongs = availableSongs;
       
+      let searchQuery: string | undefined;
+      let genreFilter: string | undefined;
+      let moodFilter: string | undefined;
+      let tempoFilter: string | undefined;
+      let albumIdFilter: string | undefined;
+      
+      // Handle both string and object parameters
+      if (typeof params === 'string') {
+        searchQuery = params;
+      } else if (params) {
+        searchQuery = params.search;
+        genreFilter = params.genre;
+        moodFilter = params.mood;
+        tempoFilter = params.tempo;
+        albumIdFilter = params.album_id;
+      }
+      
+      // Apply search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         filteredSongs = availableSongs.filter(song => 
@@ -66,6 +84,72 @@ export const useAPI = () => {
           song.genre?.toLowerCase().includes(query)
         );
       }
+      
+      // Apply genre filter
+      if (genreFilter) {
+        filteredSongs = filteredSongs.filter(song => 
+          song.genre && song.genre.toLowerCase().includes(genreFilter.toLowerCase())
+        );
+      }
+      
+      // Apply mood filter (map mood to genres)
+      if (moodFilter) {
+        const moodToGenreMap: Record<string, string[]> = {
+          'happy': ['pop', 'funk', 'disco'],
+          'sad': ['blues', 'country', 'indie'],
+          'energetic': ['rock', 'electronic', 'hip-hop'],
+          'chill': ['jazz', 'classical', 'folk'],
+          'romantic': ['rnb', 'soul', 'romantic songs'],
+          'motivational': ['rock', 'pop', 'electronic'],
+          'focus': ['classical', 'ambient', 'instrumental'],
+          'party': ['pop', 'electronic', 'hip-hop'],
+          'workout': ['rock', 'electronic', 'hip-hop'],
+          'sleep': ['ambient', 'classical', 'jazz']
+        };
+        const genresForMood = moodToGenreMap[moodFilter.toLowerCase()] || [];
+        if (genresForMood.length > 0) {
+          filteredSongs = filteredSongs.filter(song => 
+            song.genre && genresForMood.some(g => song.genre?.toLowerCase().includes(g.toLowerCase()))
+          );
+        } else {
+          // If mood not mapped to specific genres, use a general approach
+          // For now, we'll just use the available mock data categories
+          if (moodFilter === 'romantic') {
+            filteredSongs = filteredSongs.filter(song => 
+              song.genre?.toLowerCase().includes('romantic') || 
+              song.title.toLowerCase().includes('love')
+            );
+          } else if (moodFilter === 'sad') {
+            filteredSongs = filteredSongs.filter(song => 
+              song.genre?.toLowerCase().includes('sad') || 
+              song.genre?.toLowerCase().includes('heartbreak')
+            );
+          } else if (moodFilter === 'chill') {
+            filteredSongs = filteredSongs.filter(song => 
+              song.genre?.toLowerCase().includes('chill') || 
+              song.genre?.toLowerCase().includes('relax') || 
+              song.genre?.toLowerCase().includes('acoustic')
+            );
+          }
+        }
+      }
+      
+      // Apply tempo filter (simplified - just filter by duration)
+      if (tempoFilter) {
+        switch (tempoFilter.toLowerCase()) {
+          case 'slow':
+            filteredSongs = filteredSongs.filter(song => song.duration < 180); // Less than 3 minutes
+            break;
+          case 'medium':
+            filteredSongs = filteredSongs.filter(song => song.duration >= 180 && song.duration <= 240); // 3-4 minutes
+            break;
+          case 'fast':
+            filteredSongs = filteredSongs.filter(song => song.duration > 240); // More than 4 minutes
+            break;
+        }
+      }
+      
+      // Album ID filter would be implemented if we had album data
       
       setSongs(filteredSongs);
     } catch (error) {

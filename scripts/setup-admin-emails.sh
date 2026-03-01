@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# YdvMusic Admin Email Setup Script
-# This script helps you quickly configure admin emails for the YdvMusic application
+# PlayMusic Admin Email Setup Script
+# This script helps you quickly configure admin emails for the PlayMusic application
 
-echo "🎵 YdvMusic Admin Email Configuration Setup"
+echo "🎵 PlayMusic Admin Email Configuration Setup"
 echo "=========================================="
 
 # Check if .env file exists
@@ -76,4 +76,4 @@ echo "📖 For detailed documentation, see: docs/ADMIN_EMAIL_GUIDE.md"
 echo ""
 echo "🧪 Demo Accounts Available:"
 echo "- Regular User: demo@example.com / password123"
-echo "- Admin User: admin@ydvmusic.com / admin123"
+echo "- Admin User: admin@PlayMusic.com / admin123"

@@ -1,10 +1,16 @@
+// Import supabase with proper typing
 import { supabase } from '../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../lib/supabase';
+
+// Type the imported supabase client
+const typedSupabase: SupabaseClient<Database> = supabase as SupabaseClient<Database>;
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Helper function to get auth headers
 const getAuthHeaders = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await typedSupabase.auth.getSession();
   return {
     'Content-Type': 'application/json',
     ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
@@ -63,12 +69,15 @@ export const authAPI = {
 
 // Music API
 export const musicAPI = {
-  getSongs: (params?: { page?: number; limit?: number; search?: string; genre?: string }) => {
+  getSongs: (params?: { page?: number; limit?: number; search?: string; genre?: string; mood?: string; tempo?: string; album_id?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.search) searchParams.append('search', params.search);
     if (params?.genre) searchParams.append('genre', params.genre);
+    if (params?.mood) searchParams.append('mood', params.mood);
+    if (params?.tempo) searchParams.append('tempo', params.tempo);
+    if (params?.album_id) searchParams.append('album_id', params.album_id);
     
     return apiRequest(`/music/songs?${searchParams.toString()}`);
   },
@@ -77,7 +86,7 @@ export const musicAPI = {
     apiRequest(`/music/songs/${id}`),
 
   uploadSong: async (formData: FormData) => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await typedSupabase.auth.getSession();
     const token = session?.access_token;
     const res = await fetch(`${API_BASE_URL}/music/songs`, {
       method: 'POST',
