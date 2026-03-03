@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, Shield, Settings, Check, X, Copy } from 'lucide-react';
+import { Mail, Plus, Trash2, Shield, Settings, Check, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminEmailManager: React.FC = () => {
@@ -16,7 +16,7 @@ const AdminEmailManager: React.FC = () => {
       .split(',')
       .map((email: string) => email.trim())
       .filter((email: string) => email.length > 0);
-    
+
     setAdminEmails(emails);
     setExactMatch(import.meta.env.VITE_ADMIN_REQUIRE_EXACT_MATCH === 'true');
     setFallbackKeyword(import.meta.env.VITE_ADMIN_FALLBACK_KEYWORD || 'admin');
@@ -27,7 +27,7 @@ const AdminEmailManager: React.FC = () => {
       toast.error('Please enter a valid email address');
       return;
     }
-    
+
     if (adminEmails.includes(newEmail.trim())) {
       toast.error('Email already exists in admin list');
       return;
@@ -55,7 +55,7 @@ const AdminEmailManager: React.FC = () => {
       '# Comma-separated list of admin email addresses',
       `VITE_ADMIN_EMAILS=${adminEmails.join(',')}`,
       '',
-      '# Admin Settings', 
+      '# Admin Settings',
       `VITE_ADMIN_REQUIRE_EXACT_MATCH=${exactMatch}`,
       `VITE_ADMIN_FALLBACK_KEYWORD=${fallbackKeyword}`
     ].join('\n');
@@ -72,7 +72,7 @@ const AdminEmailManager: React.FC = () => {
 
     const normalizedEmail = testEmailValue.toLowerCase();
     const normalizedAdminEmails = adminEmails.map(email => email.toLowerCase());
-    
+
     let isAdmin = false;
     let reason = '';
 
@@ -87,7 +87,7 @@ const AdminEmailManager: React.FC = () => {
       reason = `Contains keyword "${fallbackKeyword}"`;
     }
     else {
-      reason = exactMatch 
+      reason = exactMatch
         ? 'Not in admin list (exact match required)'
         : `Not in admin list and doesn't contain "${fallbackKeyword}"`;
     }
@@ -106,11 +106,10 @@ const AdminEmailManager: React.FC = () => {
         </div>
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            isEditing 
-              ? 'bg-green-600 hover:bg-green-700 text-white' 
+          className={`px-4 py-2 rounded-lg transition-colors ${isEditing
+              ? 'bg-green-600 hover:bg-green-700 text-white'
               : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
+            }`}
         >
           {isEditing ? (
             <>
@@ -132,7 +131,7 @@ const AdminEmailManager: React.FC = () => {
           <Mail className="w-5 h-5 mr-2" />
           Admin Emails ({adminEmails.length})
         </h4>
-        
+
         {adminEmails.length === 0 ? (
           <div className="bg-gray-700 rounded-lg p-4 text-center">
             <p className="text-gray-400">No admin emails configured</p>
@@ -189,7 +188,7 @@ const AdminEmailManager: React.FC = () => {
       {isEditing && (
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-white">Configuration Settings</h4>
-          
+
           <div className="space-y-3">
             <label className="flex items-center space-x-3">
               <input
@@ -212,12 +211,11 @@ const AdminEmailManager: React.FC = () => {
                 onChange={(e) => setFallbackKeyword(e.target.value)}
                 placeholder="admin"
                 disabled={exactMatch}
-                className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                  exactMatch ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 ${exactMatch ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               />
               <p className="text-gray-400 text-sm">
-                {exactMatch 
+                {exactMatch
                   ? 'Disabled when exact match is required'
                   : 'Emails containing this keyword will have admin access'
                 }

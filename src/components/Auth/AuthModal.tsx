@@ -58,7 +58,7 @@ const WaveAnim: React.FC = () => {
         ctx.lineWidth = 1.5;
         for (let x = 0; x < w; x++) {
           const y = h / 2 + Math.sin((x / w) * Math.PI * 4 + phase) * amp;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
       }

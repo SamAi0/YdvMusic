@@ -10,6 +10,7 @@ PlayMusic is a modern music streaming platform built with React, TypeScript, and
 - **Playlist Management**: Create, edit, and manage personal playlists
 - **Like System**: Favorite songs and create a personal collection of liked tracks
 - **Music Upload**: Admin functionality for uploading new songs
+- **Movie Showcase**: Dedicated section for movies with customizable local imagery
 - **Search & Discovery**: Browse and search for music by various criteria
 - **Responsive Design**: Works seamlessly across desktop and mobile devices
 
@@ -47,6 +48,8 @@ PlayMusic is a modern music streaming platform built with React, TypeScript, and
 
 ```
 PlayMusic/
+├── public/                 # Static assets and media files
+│   └── movies/             # Local movie posters and banners
 ├── server/                 # Backend Express server
 │   ├── config/             # Configuration files
 │   ├── controllers/        # Route controllers
@@ -110,6 +113,11 @@ npm run dev:full
 ```
 
 This command runs both the frontend (Vite) and backend (Express) servers concurrently.
+
+### Customizing Content
+
+**Movie Images**: 
+To add custom movie posters or hero banners, place your images inside the `public/movies/` directory. Supported formats include `.jpg`, `.jpeg`, `.png`, and `.webp`. Please refer to `public/movies/README.txt` for the exact file naming conventions so that they match the expected movie data.
 
 ## 🔐 Environment Variables
 

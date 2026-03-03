@@ -15,6 +15,11 @@ import Movies from './Movies';
 import MovieDetail from './MovieDetail';
 
 import Studio from './Studio';
+import KidsHome from './KidsHome';
+import KidsGames from './KidsGames';
+import KidsStories from './KidsStories';
+import KidsLearn from './KidsLearn';
+import { useKidsMode } from '../contexts/KidsModeContext';
 import { useQueue } from '../contexts/QueueContext';
 import toast from 'react-hot-toast';
 
@@ -63,6 +68,7 @@ const MainContent: React.FC<MainContentProps> = ({
   const { user } = useAuth();
   const { songs, playlists, loading, fetchSongs, getPlaylistWithSongs, likedSongs, addSongToPlaylist, deletePlaylist, removeSongFromPlaylist } = useAPI();
   const { setQueue } = useQueue();
+  const { isKidsMode } = useKidsMode();
 
   const typedFetchSongs = fetchSongs as (params?: string | { search?: string; genre?: string; mood?: string; tempo?: string; album_id?: string }) => Promise<void>;
 
@@ -397,6 +403,17 @@ const MainContent: React.FC<MainContentProps> = ({
   if (currentView.startsWith('movie:') && setCurrentView) return <MovieDetail movieId={currentView.replace('movie:', '')} setCurrentView={setCurrentView} />;
   if (currentView === 'studio') return <Studio />;
 
+  // Kids Mode Views
+  if (currentView === 'kids-home') return <KidsHome setCurrentView={setCurrentView!} />;
+  if (currentView === 'kids-games') return <KidsGames setCurrentView={setCurrentView!} />;
+  if (currentView === 'kids-stories') return <KidsStories setCurrentView={setCurrentView!} />;
+  if (currentView === 'kids-learn') return <KidsLearn setCurrentView={setCurrentView!} />;
+
+  // Intercept other non-kids views if Kids Mode is active
+  if (isKidsMode && !['kids-home', 'kids-games', 'kids-stories', 'kids-learn'].includes(currentView)) {
+    return <KidsHome setCurrentView={setCurrentView!} />;
+  }
+
   // ═══════════════════════════════════════
   //   HOME VIEW
   // ═══════════════════════════════════════
@@ -470,7 +487,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   <div
                     key={cat.name}
                     className={`bg-gradient-to-br ${cat.from} ${cat.to} p-4 rounded-2xl cursor-pointer hover:scale-105 transition-all duration-300 group relative overflow-hidden text-center animate-fade-in-up stagger-${Math.min(i + 1, 6)}`}
-                    onClick={() => { setSearchQuery(cat.name); setCurrentView && setCurrentView('search'); }}
+                    onClick={() => { setSearchQuery(cat.name); if (setCurrentView) setCurrentView('search'); }}
                   >
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-2xl" />
                     <Icon className="w-6 h-6 text-white/80 mx-auto mb-1.5 group-hover:scale-110 transition-transform" />

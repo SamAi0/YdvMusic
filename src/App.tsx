@@ -9,6 +9,10 @@ import Player from './components/Player';
 import BackgroundSelector from './components/BackgroundSelector';
 import { Song } from './hooks/useAPI';
 import { BackgroundProvider, useBackground } from './contexts/BackgroundContext';
+import { KidsModeProvider } from './contexts/KidsModeContext';
+import { ParentalControlProvider } from './contexts/ParentalControlContext';
+import ParentGateway from './components/ParentGateway';
+import VoiceCommandManager from './components/VoiceCommandManager';
 
 // Inner component that has access to QueueContext
 const AppContent: React.FC = () => {
@@ -63,6 +67,7 @@ const AppContent: React.FC = () => {
         setIsPlaying={setIsPlaying}
         onSongSelect={handleSongSelect}
       />
+      <VoiceCommandManager />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -95,13 +100,18 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <QueueProvider>
-          <BackgroundProvider>
-            <AppContent />
-          </BackgroundProvider>
-        </QueueProvider>
-      </AuthProvider>
+      <ParentalControlProvider>
+        <KidsModeProvider>
+          <AuthProvider>
+            <QueueProvider>
+              <BackgroundProvider>
+                <AppContent />
+                <ParentGateway />
+              </BackgroundProvider>
+            </QueueProvider>
+          </AuthProvider>
+        </KidsModeProvider>
+      </ParentalControlProvider>
     </ThemeProvider>
   );
 }
